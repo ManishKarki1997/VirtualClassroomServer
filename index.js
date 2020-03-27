@@ -33,7 +33,8 @@ app.use('/api/notification', NotificationController);
 
 
 mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 }).then(() => {
     console.log('Mongodb Connected')
 }).catch(err => console.log('error ', err))

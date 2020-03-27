@@ -78,7 +78,7 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
             name,
             subject,
             description,
-            backgroundImage,
+            backgroundImage: req.file.filename,
             createdBy,
             private
         })
@@ -174,6 +174,55 @@ Router.put('/', verifyToken, imageUpload, async (req, res) => {
             deleteImage(req.file.filename);
         }
 
+        return res.send({
+            error: true,
+            message: "Something went wrong."
+        })
+    }
+})
+
+// Delete Classroom
+Router.delete("/:classId", verifyToken, async (req, res) => {
+    const { classId } = req.params;
+
+    try {
+
+        // retrieve the user details
+        let user = await User.findOne({ email: req.user.email });
+
+        // retrieve the class details
+        const classToDelete = await Class.findById(classId);
+
+        // if the class' creatorid matches the id of the user
+        if (classToDelete.createdBy.equals(user._id)) {
+
+            // delete the background image of the class
+            deleteImage(classToDelete.backgroundImage);
+
+            // remove the classid reference from user's createdClasses array
+            user.createdClasses.splice(user.createdClasses.indexOf(classId), 1);
+
+            // save the updated user details
+            await user.save();
+
+            // delete the class
+            await Class.deleteOne({ _id: classId });
+
+            return res.send({
+                error: false,
+                message: "Class Successfully Deleted."
+            })
+
+        } else {
+            return res.send({
+                error: true,
+                message: "You do not have the permission to perform this action."
+            })
+        }
+
+
+    } catch (error) {
+        console.log(error)
         return res.send({
             error: true,
             message: "Something went wrong."
