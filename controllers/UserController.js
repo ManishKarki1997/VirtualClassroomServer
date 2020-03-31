@@ -100,7 +100,6 @@ Router.post('/', imageUpload, async (req, res) => {
 
 // User Login
 Router.post('/login', async (req, res) => {
-    console.log(process.env.JWT_SECRET_KEY)
     const { email, password } = req.body;
 
     try {

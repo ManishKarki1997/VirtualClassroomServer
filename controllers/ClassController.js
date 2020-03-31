@@ -154,7 +154,6 @@ Router.post('/join', verifyToken, async (req, res) => {
             await classToJoin.save();
             await user.save();
 
-            const newClass = await Class.findById(classId)
 
             return res.send({
                 error: false,
