@@ -40,7 +40,7 @@ Router.get('/', verifyToken, async (req, res) => {
 // Create a new class
 Router.post('/', verifyToken, imageUpload, async (req, res) => {
 
-    const { name, subject, description, backgroundImage, createdBy, private } = req.body;
+    const { name, shortInfo, description, startTime, endTime, createdBy, private } = req.body;
 
     try {
 
@@ -50,11 +50,22 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
         if (validationResult.error) {
             // If the user uploaded a class background image, delete it
             if (req.file) {
-                deleteImage(req.file.filename)
+                //remove spaces, reason being frontend not rendering images from background:url() if the url doesn't escape spaces
+                deleteImage(req.file.filename.trim().replace(/\s/g, ''));
             }
             return res.send({
                 error: true,
                 message: validationResult.error.details[0].message
+            })
+        }
+
+        if (!startTime || !endTime) {
+            if (req.file) {
+                deleteImage(req.file.filename)
+            }
+            return res.send({
+                error: true,
+                message: "Please specify start and end time of the class."
             })
         }
 
@@ -76,14 +87,18 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
         // create a new class
         const newClass = new Class({
             name,
-            subject,
+            shortInfo,
             description,
             backgroundImage: req.file.filename,
             createdBy,
-            private
+            private,
+            startTime,
+            endTime
         })
 
         const result = await newClass.save();
+
+        const classWithUserDetails = await Class.findById(result._id).populate('createdBy');
 
         // add the newly created class reference to that user
         user.createdClasses.push(result._id);
@@ -91,7 +106,7 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
 
         return res.send({
             error: false,
-            payload: { result }
+            payload: { result: classWithUserDetails }
         })
 
     } catch (error) {
@@ -111,23 +126,44 @@ Router.post('/join', verifyToken, async (req, res) => {
         // fetch the user details
         const user = await User.findById(userId);
 
-        // if the user has already joined the class, return error message
-        if (user.joinedClasses.indexOf(classId) > -1) {
+        const classToJoin = await Class.findById(classId);
+
+        // if the user has already joined the class, leave the class
+        if (user.joinedClasses.indexOf(classId) >= 0) {
+            user.joinedClasses.splice(user.joinedClasses.indexOf(classId), 1);
+            classToJoin.users.splice(classToJoin.users.indexOf(userId), 1);
+            classToJoin.pendingJoinRequests.splice(classToJoin.users.indexOf(userId), 1);
+
+            await user.save();
+            await classToJoin.save();
+
             return res.send({
-                error: true,
-                message: "You've already joined the class."
+                error: false,
+                message: "You've left the class."
+            })
+
+        } else {
+
+            // push the user id to the class' pendingJoinRequests array
+            classToJoin.users.push(userId); //delete it after making routes for teacher to accept or reject join requests
+            classToJoin.pendingJoinRequests.push(userId);
+            // push the class id to the user's joinedClasses array
+            user.joinedClasses.push(classId);
+
+
+            await classToJoin.save();
+            await user.save();
+
+            const newClass = await Class.findById(classId)
+
+            return res.send({
+                error: false,
+                message: "You've successfully joined the class."
             })
         }
 
-        // push the class id to the user's joinedClasses array
-        user.joinedClasses.push(classId);
 
-        await user.save();
 
-        return res.send({
-            error: false,
-            payload: { user }
-        })
 
     } catch (error) {
         console.log(error)
@@ -143,7 +179,7 @@ Router.post('/join', verifyToken, async (req, res) => {
 // Edit classroom details
 Router.put('/', verifyToken, imageUpload, async (req, res) => {
 
-    const { classId, name, subject, description, private } = req.body;
+    const { classId, name, shortInfo, description, private } = req.body;
 
     try {
 
@@ -229,6 +265,8 @@ Router.delete("/:classId", verifyToken, async (req, res) => {
         })
     }
 })
+
+
 
 
 module.exports = Router;

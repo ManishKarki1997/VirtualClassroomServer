@@ -29,8 +29,8 @@ app.use('/api/class', ClassController);
 app.use('/api/resource', ResourceController);
 app.use('/api/notification', NotificationController);
 
-
-
+// make uploads folder available for public access
+app.use('/uploads', express.static('uploads'));
 
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,

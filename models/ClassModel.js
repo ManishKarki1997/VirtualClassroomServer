@@ -9,7 +9,7 @@ const ClassSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    subject: {
+    shortInfo: {
         type: String,
         required: true
     },
@@ -29,6 +29,20 @@ const ClassSchema = mongoose.Schema({
         ref: 'User',
         required: true
     },
+    startTime: {
+        type: String,
+        required: true
+    },
+    endTime: {
+        type: String,
+        required: true
+    },
+    pendingJoinRequests: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    ],
     resources: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Resource'
@@ -40,7 +54,7 @@ const ClassSchema = mongoose.Schema({
     users: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
 
 
 

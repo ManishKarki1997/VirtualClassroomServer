@@ -90,6 +90,7 @@ Router.post('/', imageUpload, async (req, res) => {
 
         })
     } catch (error) {
+        console.log(error)
         return res.send({
             error: true,
             message: error
@@ -136,6 +137,29 @@ Router.post('/login', async (req, res) => {
     }
 })
 
+
+// Get user's enrolled or teaching classes detail
+Router.get('/classes', verifyToken, async (req, res) => {
+    try {
+        const userClasses = await User.findOne({ email: req.user.email })
+            .populate({
+                path: 'createdClasses joinedClasses',
+                populate: {
+                    path: 'createdBy'
+                }
+            });
+        const { createdClasses, joinedClasses } = userClasses;
+        return res.send({
+            error: false,
+            payload: { createdClasses, joinedClasses }
+        })
+    } catch (error) {
+        return res.send({
+            error: true,
+            message: 'Something went wrong.'
+        })
+    }
+})
 
 
 

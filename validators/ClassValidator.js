@@ -10,8 +10,12 @@ const classroomSchema = Joi.object({
     createdBy: Joi.string()
         .required(),
 
-    subject: Joi.string()
-        .required()
+    shortInfo: Joi.string()
+        .required(),
+
+    startTime: Joi.string().required(),
+
+    endTime: Joi.string().required()
 })
 
 
