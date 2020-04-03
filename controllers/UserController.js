@@ -10,7 +10,7 @@ const User = require('../models/UserModel');
 const Class = require('../models/ClassModel');
 
 // Helpers
-const deleteImage = require('../helpers/deleteImage');
+const deleteFile = require('../helpers/deleteFile');
 
 // Validators
 const UserValidator = require('../validators/UserValidator');
@@ -38,7 +38,7 @@ Router.post('/', imageUpload, async (req, res) => {
         const validationResult = UserValidator.validate(req.body);
         if (validationResult.error) {
             if (req.file) {
-                deleteImage(req.file.filename)
+                deleteImage(req.file.filename, 'images')
             }
             return res.send({
                 error: true,
@@ -52,7 +52,7 @@ Router.post('/', imageUpload, async (req, res) => {
         if (existingUser) {
             // if the user uploaded an avatar image, delete it
             if (req.file) {
-                deleteImage(req.file.filename)
+                deleteImage(req.file.filename, 'images')
             }
 
             return res.send({
@@ -80,6 +80,9 @@ Router.post('/', imageUpload, async (req, res) => {
 
         const result = await user.save();
 
+        // don't send password property
+        result.password = undefined;
+
         // return the newly created user as the payload
         return res.send({
             error: false,
@@ -90,7 +93,6 @@ Router.post('/', imageUpload, async (req, res) => {
 
         })
     } catch (error) {
-        console.log(error)
         return res.send({
             error: true,
             message: error
@@ -117,6 +119,9 @@ Router.post('/login', async (req, res) => {
             })
         }
 
+        // don't send password property
+        user.password = undefined;
+
         // Create a json webtoken
         const jwtToken = JWToken.sign({ email }, process.env.JWT_SECRET_KEY);
 
@@ -142,9 +147,9 @@ Router.get('/classes', verifyToken, async (req, res) => {
     try {
         const userClasses = await User.findOne({ email: req.user.email })
             .populate({
-                path: 'createdClasses joinedClasses',
+                path: 'createdClasses joinedClasses ',
                 populate: {
-                    path: 'createdBy'
+                    path: 'createdBy '
                 }
             });
         const { createdClasses, joinedClasses } = userClasses;

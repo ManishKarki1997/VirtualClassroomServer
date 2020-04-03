@@ -9,7 +9,11 @@ const ResourceSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    subject: {
+    description: {
+        type: String,
+        required: true
+    },
+    resourceUrl: {
         type: String,
         required: true
     },

@@ -8,7 +8,7 @@ const User = require('../models/UserModel');
 
 
 // Helpers
-const deleteImage = require('../helpers/deleteImage');
+const deleteImage = require('../helpers/deleteFile');
 
 // Validators
 const ClassValidator = require('../validators/ClassValidator');
@@ -51,7 +51,7 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
             // If the user uploaded a class background image, delete it
             if (req.file) {
                 //remove spaces, reason being frontend not rendering images from background:url() if the url doesn't escape spaces
-                deleteImage(req.file.filename.trim().replace(/\s/g, ''));
+                deleteImage(req.file.filename.trim().replace(/\s/g, ''), 'images');
             }
             return res.send({
                 error: true,
@@ -61,7 +61,7 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
 
         if (!startTime || !endTime) {
             if (req.file) {
-                deleteImage(req.file.filename)
+                deleteImage(req.file.filename, 'images');
             }
             return res.send({
                 error: true,
@@ -75,7 +75,7 @@ Router.post('/', verifyToken, imageUpload, async (req, res) => {
         if (!user) {
 
             if (req.file) {
-                deleteImage(req.file.filename)
+                deleteImage(req.file.filename, 'images')
             }
 
             return res.send({
@@ -132,7 +132,7 @@ Router.post('/join', verifyToken, async (req, res) => {
         if (user.joinedClasses.indexOf(classId) >= 0) {
             user.joinedClasses.splice(user.joinedClasses.indexOf(classId), 1);
             classToJoin.users.splice(classToJoin.users.indexOf(userId), 1);
-            classToJoin.pendingJoinRequests.splice(classToJoin.users.indexOf(userId), 1);
+            // classToJoin.pendingJoinRequests.splice(classToJoin.users.indexOf(userId), 1);
 
             await user.save();
             await classToJoin.save();
@@ -145,10 +145,10 @@ Router.post('/join', verifyToken, async (req, res) => {
         } else {
 
             // push the user id to the class' pendingJoinRequests array
-            classToJoin.users.push(userId); //delete it after making routes for teacher to accept or reject join requests
+            // classToJoin.users.push(userId); //delete it after making routes for teacher to accept or reject join requests
             classToJoin.pendingJoinRequests.push(userId);
             // push the class id to the user's joinedClasses array
-            user.joinedClasses.push(classId);
+            // user.joinedClasses.push(classId);
 
 
             await classToJoin.save();
@@ -157,7 +157,7 @@ Router.post('/join', verifyToken, async (req, res) => {
 
             return res.send({
                 error: false,
-                message: "You've successfully joined the class."
+                message: "Request sent. You'll join the class when the class teacher accepts the request."
             })
         }
 
@@ -189,7 +189,7 @@ Router.put('/', verifyToken, imageUpload, async (req, res) => {
         // if the user changed the class background image, 
         if (req.file) {
             // delete the old background image file
-            deleteImage(newClass.backgroundImage);
+            deleteImage(newClass.backgroundImage, 'images');
             // set the newly selected image as the background image
             newClass.backgroundImage = req.file.filename
         }
@@ -206,7 +206,7 @@ Router.put('/', verifyToken, imageUpload, async (req, res) => {
 
         // in case of error, if user uploaded an image, delete it
         if (req.file) {
-            deleteImage(req.file.filename);
+            deleteImage(req.file.filename, 'images');
         }
 
         return res.send({
@@ -232,7 +232,7 @@ Router.delete("/:classId", verifyToken, async (req, res) => {
         if (classToDelete.createdBy.equals(user._id)) {
 
             // delete the background image of the class
-            deleteImage(classToDelete.backgroundImage);
+            deleteImage(classToDelete.backgroundImage, 'images');
 
             // remove the classid reference from user's createdClasses array
             user.createdClasses.splice(user.createdClasses.indexOf(classId), 1);
@@ -265,6 +265,64 @@ Router.delete("/:classId", verifyToken, async (req, res) => {
     }
 })
 
+// Get a class' pending join requests user details
+Router.get('/pendingrequests/:classId', verifyToken, async (req, res) => {
+    const { classId } = req.params;
+
+    try {
+        const theClass = await Class.findById(classId).populate('pendingJoinRequests');
+        return res.send({
+            error: false,
+            payload: { pendingJoinRequests: theClass.pendingJoinRequests }
+        })
+    } catch (error) {
+        return res.send({
+            error: true,
+            message: "Something went wrong."
+        })
+    }
+})
+
+
+// Accett/Reject student join request
+Router.post('/pendingrequests/accept', verifyToken, async (req, res) => {
+    const { classId, decision, userId } = req.body;
+
+    try {
+        const classToJoin = await Class.findById(classId);
+
+        // the join request is denied if the decision equals 'accept'
+        if (decision === 'reject') {
+            classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
+            await classToJoin.save();
+
+            return res.send({
+                error: false,
+                message: "The request to join the class has been denied."
+            })
+        } else if (decision === 'accept') {
+            // if the class teacher accepted the request,
+            // remove the userId from the pendingRequests array
+            // add the userId to the class users array
+            const user = await User.findById(userId);
+            user.joinedClasses.push(classId);
+            classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
+            classToJoin.users.push(userId);
+            await user.save();
+            await classToJoin.save();
+
+            return res.send({
+                error: false,
+                message: "The request to join the class has been accepted."
+            })
+        }
+    } catch (error) {
+        return res.send({
+            error: true,
+            message: "Something went wrong."
+        })
+    }
+})
 
 
 

@@ -1,9 +1,9 @@
 const fs = require("fs");
 const path = require('path');
 
-const deleteImage = async (fileName) => {
+const deleteImage = async (fileName, folderName) => {
 
-    const imagePath = path.join(process.cwd(), 'uploads/images', fileName)
+    const imagePath = path.join(process.cwd(), `uploads/${folderName}`, fileName)
     try {
         fs.unlink(imagePath, err => {
             if (err) {
