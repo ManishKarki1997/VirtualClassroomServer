@@ -22,6 +22,7 @@ const ResourceSchema = mongoose.Schema({
         ref: 'User',
         required: true
     },
+
     classId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class',
@@ -30,6 +31,10 @@ const ResourceSchema = mongoose.Schema({
     private: {
         type: Boolean,
         default: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now()
     }
 
 })

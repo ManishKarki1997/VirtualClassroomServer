@@ -2,12 +2,22 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
-
-const app = express();
+const socket = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/virtualclassroom';
+
+const sockets = require('./sockets/socket');
+
+const app = express();
+const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+})
+
+const io = socket(server);
+sockets(io)
+
+
 
 
 app.use(bodyParser.urlencoded({
@@ -39,6 +49,4 @@ mongoose.connect(MONGODB_URI, {
     console.log('Mongodb Connected')
 }).catch(err => console.log('error ', err))
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-})
+

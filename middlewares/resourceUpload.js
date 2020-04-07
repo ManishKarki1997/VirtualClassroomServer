@@ -15,14 +15,14 @@ const storage = multer.diskStorage({
 // File Filters
 let fileFilter = (req, file, cb) => {
 
-    const allowedMimeTypes = ['application/msword', 'application/epub+zip', 'image/jpeg', 'application/vnd.ms-powerpoint', 'application/rtf', 'application/vnd.rar', 'application/zip', 'image/png'];
+    const allowedMimeTypes = ['application/msword', 'application/epub+zip', 'image/jpeg', 'application/vnd.ms-powerpoint', 'application/rtf', 'application/vnd.rar', 'application/zip', 'image/png', 'application/pdf', 'font/otf'];
 
     // If user uploaded file's mimetype is not valid, return an error message
     if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
         cb({
-            success: false,
+            error: true,
             message: "Invalid file type."
         }, false)
     }
@@ -41,7 +41,6 @@ const upload = multer(multerObj).single('resource');
 module.exports = (req, res, next) => {
     upload(req, res, function (error) {
         if (error) {
-            res.status(500);
             if (error.code === 'LIMIT_FILE_SIZE') {
                 error.message = "Maximum allowed file size is 20MB";
                 error.error = true;

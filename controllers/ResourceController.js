@@ -29,11 +29,6 @@ Router.get('/:classId', async (req, res) => {
             payload: { resources: resources.resources }
         })
 
-
-        return res.send({
-            error: false,
-            payload: { resources: 'these are the available resources' }
-        })
     } catch (error) {
         return res.send({
             error: true,
@@ -60,7 +55,8 @@ Router.post('/', verifyToken, resourceUpload, async (req, res) => {
             description,
             classId,
             createdBy,
-            resourceUrl: req.file.filename
+            resourceUrl: req.file.filename,
+
         })
 
         const notification = new Notification({
@@ -103,9 +99,10 @@ Router.post('/', verifyToken, resourceUpload, async (req, res) => {
 
 // Delete Resource
 Router.delete('/', verifyToken, async (req, res) => {
-    const { resourceId, classId, userId } = req.body;
+    const { resourceId, classId, userId } = req.body.payload;
 
     try {
+
 
         const resource = await Resource.findById(resourceId);
         const theClass = await Class.findById(classId);
@@ -118,6 +115,10 @@ Router.delete('/', verifyToken, async (req, res) => {
                 message: "You do not have the authority to delete the file."
             })
         }
+
+
+
+
 
         // delete the resource
         await Resource.findOneAndDelete(resourceId);
