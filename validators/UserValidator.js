@@ -11,7 +11,7 @@ const userSchema = Joi.object({
     avatar: Joi.string(),
 
     name: Joi.string()
-        .min(4)
+        .min(3)
         .max(36),
 
     contact: Joi.number()

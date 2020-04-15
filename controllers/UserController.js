@@ -38,7 +38,7 @@ Router.post('/', imageUpload, async (req, res) => {
         const validationResult = UserValidator.validate(req.body);
         if (validationResult.error) {
             if (req.file) {
-                deleteImage(req.file.filename, 'images')
+                deleteFile(req.file.filename, 'images')
             }
             return res.send({
                 error: true,
@@ -52,7 +52,7 @@ Router.post('/', imageUpload, async (req, res) => {
         if (existingUser) {
             // if the user uploaded an avatar image, delete it
             if (req.file) {
-                deleteImage(req.file.filename, 'images')
+                deleteFile(req.file.filename, 'images')
             }
 
             return res.send({

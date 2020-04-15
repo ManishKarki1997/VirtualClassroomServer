@@ -1,5 +1,7 @@
 let users = [] // holds all connected users
 
+let liveOnlineClasses = {}
+
 
 const sockets = (io) => {
 
@@ -36,6 +38,7 @@ const sockets = (io) => {
     }
 
     io.on("connection", (socket) => {
+
         socket.on('user_online', joinedUser => {
             // if there already are online users, check if the user exists in the existing users array
             // seems like dumb logic, but if removed, can't emit active users in a classroom belo, ugh
@@ -69,11 +72,10 @@ const sockets = (io) => {
             emitActiveUsers(classroomId)
         })
 
-        socket.on('join_class', ({ classroomId, classroomName }) => {
+        socket.on('join_class', ({ classroomId, isClassroomTeacher }) => {
             // currently active sockets/users in the room
             const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
 
-            // console.log(activeRoomSockets)
 
             // console.log(activeRoomSockets, socket.id)
             if (activeRoomSockets && !(socket.id in activeRoomSockets.sockets))
@@ -81,6 +83,8 @@ const sockets = (io) => {
 
 
             getAllClassroomUsers(classroomId)
+
+
         })
 
         socket.on('get_all_online_users', (classroomId) => {
@@ -88,13 +92,32 @@ const sockets = (io) => {
         })
 
         socket.on('leave_classroom', (classroomId) => {
-            console.log('leaving ', classroomId)
             socket.leave(classroomId)
             emitActiveUsers(classroomId)
         })
 
         socket.on('disconnect', () => {
             users = users.filter(user => user.socket !== socket.id)
+        })
+
+
+        socket.on('set_classroom_live_stream', ({ classroomId, stream }) => {
+
+            // liveOnlineClasses[classroomId].stream = stream;
+        })
+
+        socket.on('get_class_live_stream', ({ classroomId }) => {
+            if (liveOnlineClasses[classroomId]) {
+
+                io.to(classroomId).emit("receive_class_live_stream", liveOnlineClasses[classroomId].stream)
+            }
+        })
+
+
+
+        // Whiteboard Drawing
+        socket.on("someone_drew", ({ classroomId, drawing }) => {
+            io.to(classroomId).emit('drawing_data', drawing);
         })
 
     })
