@@ -76,10 +76,9 @@ const sockets = (io) => {
             // currently active sockets/users in the room
             const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
 
-
             // console.log(activeRoomSockets, socket.id)
-            if (activeRoomSockets && !(socket.id in activeRoomSockets.sockets))
-                socket.join(classroomId);
+            // if (activeRoomSockets && !(socket.id in activeRoomSockets.sockets))
+            socket.join(classroomId);
 
 
             getAllClassroomUsers(classroomId)
@@ -118,6 +117,16 @@ const sockets = (io) => {
         // Whiteboard Drawing
         socket.on("someone_drew", ({ classroomId, drawing }) => {
             io.to(classroomId).emit('drawing_data', drawing);
+        })
+
+
+        // Chat System
+        socket.on('message_sent', ({ classroomId, message }) => {
+            io.to(classroomId).emit('message_received', message)
+        })
+
+        socket.on('someoneIsTyping', message => {
+            io.to(message.classroomId).emit('someone_is_typing', message);
         })
 
     })
