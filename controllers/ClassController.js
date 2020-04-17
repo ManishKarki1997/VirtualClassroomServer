@@ -146,19 +146,28 @@ Router.post('/join', verifyToken, async (req, res) => {
 
             // push the user id to the class' pendingJoinRequests array
             // classToJoin.users.push(userId); //delete it after making routes for teacher to accept or reject join requests
-            classToJoin.pendingJoinRequests.push(userId);
-            // push the class id to the user's joinedClasses array
-            // user.joinedClasses.push(classId);
+            if (classToJoin.pendingJoinRequests.indexOf(userId) == -1) {
+                classToJoin.pendingJoinRequests.push(userId);
+                await classToJoin.save();
+                await user.save();
 
 
-            await classToJoin.save();
-            await user.save();
+                return res.send({
+                    error: false,
+                    message: "Request sent. You'll join the class when the class teacher accepts the request."
+                })
+            } else {
+
+                await classToJoin.save();
+                await user.save();
 
 
-            return res.send({
-                error: false,
-                message: "Request sent. You'll join the class when the class teacher accepts the request."
-            })
+                return res.send({
+                    error: false,
+                    message: "Please wait until the class teacher accepts your request."
+                })
+            }
+
         }
 
 

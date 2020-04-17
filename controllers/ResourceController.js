@@ -146,5 +146,30 @@ Router.delete('/', verifyToken, async (req, res) => {
     }
 })
 
+// Fetch all resources of user's classes
+Router.get('/user/resources', verifyToken, async (req, res) => {
+    try {
+        const { email } = req.user;
+
+        const user = await User.findOne({ email });
+        const userClasses = user.joinedClasses;
+        let allResources = []
+        await Promise.all(userClasses.map(async (userClass) => {
+            const classResources = await Class.findById(userClass).populate('resources');
+            allResources.push({
+                className: classResources.name,
+                classId: classResources._id,
+                resources: classResources.resources
+            })
+        }))
+        return res.send(allResources);
+
+
+
+    } catch (error) {
+        console.log(error)
+    }
+})
+
 
 module.exports = Router;
