@@ -105,12 +105,16 @@ const sockets = (io) => {
             // liveOnlineClasses[classroomId].stream = stream;
         })
 
+
+
         socket.on('get_class_live_stream', ({ classroomId }) => {
             if (liveOnlineClasses[classroomId]) {
 
                 io.to(classroomId).emit("receive_class_live_stream", liveOnlineClasses[classroomId].stream)
             }
         })
+
+
 
 
 
