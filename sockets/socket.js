@@ -1,3 +1,7 @@
+const Class = require('../models/ClassModel');
+const User = require('../models/UserModel');
+
+
 let users = [] // holds all connected users
 
 let liveOnlineClasses = {}
@@ -66,10 +70,17 @@ const sockets = (io) => {
         })
 
         socket.on('class_streaming_started', payload => {
-            const { classroomName, classroomId, classroomTeacher } = payload;
+            const { classroomName, classroomId, classroomTeacher, classroomImage, startTime } = payload;
             io.emit('class_has_started', { classroomName, classroomId });
             socket.join(classroomId);
             emitActiveUsers(classroomId)
+            liveOnlineClasses.classroomId = {
+                classroomName,
+                classroomId,
+                classroomTeacher,
+                classroomImage,
+                startTime
+            }
         })
 
         socket.on('join_class', ({ classroomId, isClassroomTeacher }) => {
@@ -114,6 +125,22 @@ const sockets = (io) => {
             }
         })
 
+        // retrieve all live online classes
+        socket.on('get_all_live_classes', async ({ userId }) => {
+
+            // get the user details
+            const user = await User.findById(userId);
+
+            // classes joined by the user
+            const allClasses = user.joinedClasses;
+
+            // filter out only those online classes in which the user has joined
+            const activeOnlineClasses = Object.values(liveOnlineClasses).filter(onlineClass => allClasses.indexOf(onlineClass.classroomId) > -1)
+
+            io.to(socket.id).emit('all_live_classes', activeOnlineClasses)
+            // console.log(activeOnlineClasses)
+        })
+
 
 
 
@@ -136,4 +163,6 @@ const sockets = (io) => {
     })
 }
 
-module.exports = sockets;
+
+
+module.exports = { sockets, liveOnlineClasses, users };

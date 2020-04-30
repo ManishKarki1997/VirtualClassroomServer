@@ -293,7 +293,7 @@ Router.get('/pendingrequests/:classId', verifyToken, async (req, res) => {
 })
 
 
-// Accett/Reject student join request
+// Accept/Reject student join request
 Router.post('/pendingrequests/accept', verifyToken, async (req, res) => {
     const { classId, decision, userId } = req.body;
 
@@ -332,6 +332,7 @@ Router.post('/pendingrequests/accept', verifyToken, async (req, res) => {
         })
     }
 })
+
 
 
 
