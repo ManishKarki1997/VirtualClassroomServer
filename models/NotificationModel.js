@@ -19,6 +19,9 @@ const NotificationSchema = mongoose.Schema({
         ref: 'Class',
         required: true
     },
+    resourceUrl: {
+        type: String,
+    },
     readBy: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

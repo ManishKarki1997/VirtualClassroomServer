@@ -2,12 +2,22 @@ const Class = require('../models/ClassModel');
 const User = require('../models/UserModel');
 
 
-let users = [] // holds all connected users
+let users = []; // holds all online users in a class
+let allActiveUsers = []; // holds all the online users
 
-let liveOnlineClasses = {}
+let liveOnlineClasses = {};
+// let notificationRecipients = [];
 
 
-const sockets = (io) => {
+// const setNotificationRecipients = (recipients) => {
+//     notificationRecipients = recipients;
+// }
+
+
+function sockets(io) {
+
+
+
 
     // emit an event to send all active users from a class
     const emitActiveUsers = (classroomId, roomActiveUsers) => {
@@ -41,11 +51,31 @@ const sockets = (io) => {
 
     }
 
+
     io.on("connection", (socket) => {
+
+        // fired when a user reaches the dashboard on the frontend
+        socket.on('user_is_online', user => {
+
+            // if the allActiveUsers array is empty, i.e. only one user is currently online,
+            // push it into the array
+            if (allActiveUsers.length == 0) {
+                user.socket = socket.id;
+                allActiveUsers.push(user);
+            }
+            // if there is already at least one active users, check if this socket is already present
+            else if (allActiveUsers.length > 0) {
+                if (allActiveUsers.find(user => user.socket === socket.id) == undefined) {
+                    user.socket = socket.id;
+                    allActiveUsers.push(user);
+                }
+            }
+
+        })
 
         socket.on('user_online', joinedUser => {
             // if there already are online users, check if the user exists in the existing users array
-            // seems like dumb logic, but if removed, can't emit active users in a classroom belo, ugh
+            // seems like dumb logic, but if removed, can't emit active users in a classroom below, ugh
             if (users.length > 0) {
                 users.forEach(user => {
                     if (user.email !== joinedUser.email) {
@@ -106,10 +136,6 @@ const sockets = (io) => {
             emitActiveUsers(classroomId)
         })
 
-        socket.on('disconnect', () => {
-            users = users.filter(user => user.socket !== socket.id)
-        })
-
 
         socket.on('set_classroom_live_stream', ({ classroomId, stream }) => {
 
@@ -160,9 +186,52 @@ const sockets = (io) => {
             io.to(message.classroomId).emit('someone_is_typing', message);
         })
 
+
+
+        // Notification System
+
+        // send notifications to relevant recipients when new notification is created
+        socket.on('new_notification', async ({ classId, notification }) => {
+            const classroom = await Class.findById(classId).populate('createdBy');
+            const classroomTeacher = classroom.createdBy.name;
+            const className = classroom.name;
+            let notificationContent = "";
+
+            if (notification.type === 'RESOURCE_CREATED') {
+                notificationContent = `${classroomTeacher} has added a new file in ${className}`;
+            }
+
+            const intendedRecipients = classroom.users;
+            let recipientsSockets = []
+
+            // console.log(allActiveUsers)
+
+            for (let i = 0; i < allActiveUsers.length; i++) {
+                for (j = 0; j < intendedRecipients.length; j++) {
+                    // console.log(allActiveUsers[i].userId, intendedRecipients[j])
+                    // each item in intendedRecipients is an object, so convert it to string
+                    if (allActiveUsers[i].userId === String(intendedRecipients[j])) {
+                        recipientsSockets.push(allActiveUsers[i].socket)
+                    }
+                }
+            }
+
+            recipientsSockets = recipientsSockets.filter(recipient => recipient !== socket.id);
+
+            if (recipientsSockets.length > 0) {
+                recipientsSockets.forEach(recipient => {
+                    io.to(recipient).emit("new_notification", notificationContent);
+                })
+            }
+        })
+
+        socket.on('disconnect', () => {
+            // remove disconnected users from the array
+            users = users.filter(user => user.socket !== socket.id) //need to remove this line later, TODO
+            allActiveUsers = allActiveUsers.filter(user => user.socket !== socket.id)
+        })
+
     })
 }
-
-
 
 module.exports = { sockets, liveOnlineClasses, users };

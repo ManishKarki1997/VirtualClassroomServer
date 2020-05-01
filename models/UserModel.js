@@ -35,10 +35,6 @@ const UserSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Resource'
     }],
-    notifications: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Notification'
-    }],
     joinedClasses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'
@@ -46,7 +42,11 @@ const UserSchema = mongoose.Schema({
     createdClasses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'
-    }]
+    }],
+    notifications: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification'
+    }],
 
 })
 

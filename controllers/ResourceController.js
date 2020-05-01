@@ -10,6 +10,7 @@ const User = require("../models/UserModel");
 
 // helpers
 const deleteFile = require('../helpers/deleteFile');
+const { setNotificationRecipients } = require('../sockets/socket');
 
 // Middlewares
 const resourceUpload = require('../middlewares/resourceUpload');
@@ -63,12 +64,21 @@ Router.post('/', verifyToken, resourceUpload, async (req, res) => {
             title: `${user.name} has added a file in ${theClass.name}.`,
             createdBy: user._id,
             classId: classId,
+            resourceUrl: req.file.filename
         })
 
         const savedNotification = await notification.save();
 
         // save the resource to the database
         const result = await resource.save();
+
+        const classUsers = theClass.users;
+        await Promise.all(classUsers.map(userId => {
+            User.findById(userId).then(user => {
+                user.notifications.push(savedNotification._id);
+                return user.save();
+            })
+        }))
 
         // push the resource reference to the class' resources array
         theClass.resources.push(result._id);
@@ -78,6 +88,8 @@ Router.post('/', verifyToken, resourceUpload, async (req, res) => {
 
         // save the class
         await theClass.save();
+
+        // setNotificationRecipients(theClass.users);
 
         return res.send({
             error: false,
