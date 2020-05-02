@@ -100,8 +100,8 @@ function sockets(io) {
         })
 
         socket.on('class_streaming_started', payload => {
-            const { classroomName, classroomId, classroomTeacher, classroomImage, startTime } = payload;
-            io.emit('class_has_started', { classroomName, classroomId });
+            const { classroomName, classroomId, classroomTeacher, classroomImage, startTime, teacherId } = payload;
+            io.emit('class_has_started', { classroomName, classroomId, teacherId });
             socket.join(classroomId);
             emitActiveUsers(classroomId)
             liveOnlineClasses.classroomId = {
@@ -111,6 +111,7 @@ function sockets(io) {
                 classroomImage,
                 startTime
             }
+            getAllClassroomUsers(classroomId)
         })
 
         socket.on('join_class', ({ classroomId, isClassroomTeacher }) => {
