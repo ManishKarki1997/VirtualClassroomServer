@@ -167,7 +167,7 @@ Router.get('/classes', verifyToken, async (req, res) => {
 
 
 // User saves a resource in his personal collection
-Router.post('/resources/add', verifyToken, async (req, res) => {
+Router.post('/resources', verifyToken, async (req, res) => {
     const { userId, resourceId } = req.body;
     try {
         const userEmail = req.user.email;
@@ -192,6 +192,38 @@ Router.post('/resources/add', verifyToken, async (req, res) => {
             message: "Resource successfully saved.",
             payload: { resource: saved }
         })
+
+    } catch (error) {
+        console.log(error)
+        return res.send({
+            error: true,
+            message: error
+        })
+    }
+})
+
+Router.get('/resources', verifyToken, async (req, res) => {
+    const userEmail = req.user.email;
+
+    try {
+
+        const userDetails = await User.findOne({ email: userEmail }).populate({
+            path: 'savedResources ',
+            populate: {
+                path: 'classId'
+            }
+        });;
+        if (!userDetails) {
+            return res.send({
+                error: true,
+                message: "User with that email does not exist!"
+            });
+        } else {
+            return res.send({
+                error: false,
+                payload: { savedResources: userDetails.savedResources }
+            })
+        }
 
     } catch (error) {
         console.log(error)
