@@ -163,7 +163,11 @@ Router.get('/user/resources', verifyToken, async (req, res) => {
     try {
         const { email } = req.user;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('savedResources');
+
+        // Fetch user's saved resources
+        const savedResources = user.savedResources;
+
         const userClasses = user.joinedClasses;
         let allResources = []
         await Promise.all(userClasses.map(async (userClass) => {
@@ -174,7 +178,10 @@ Router.get('/user/resources', verifyToken, async (req, res) => {
                 resources: classResources.resources
             })
         }))
-        return res.send(allResources);
+        return res.send({
+            resources: allResources,
+            savedResources
+        });
 
 
 

@@ -166,5 +166,42 @@ Router.get('/classes', verifyToken, async (req, res) => {
 })
 
 
+// User saves a resource in his personal collection
+Router.post('/resources/add', verifyToken, async (req, res) => {
+    const { userId, resourceId } = req.body;
+    try {
+        const userEmail = req.user.email;
+        const userDetails = await User.findOne({ email: userEmail });
+
+        if (!userDetails) {
+            return res.send({
+                error: true,
+                message: "No user found with that email."
+            })
+        }
+        if (userDetails.savedResources.indexOf(resourceId) > -1) {
+            return res.send({
+                error: true,
+                message: "This resource is already saved."
+            });
+        }
+        userDetails.savedResources.push(resourceId);
+        const saved = await userDetails.save();
+        return res.send({
+            error: false,
+            message: "Resource successfully saved.",
+            payload: { resource: saved }
+        })
+
+    } catch (error) {
+        console.log(error)
+        return res.send({
+            error: true,
+            message: error
+        })
+    }
+})
+
+
 
 module.exports = Router;
