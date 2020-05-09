@@ -21,13 +21,6 @@ const verifyToken = require('../middlewares/verifyToken');
 
 
 
-// Router.get('/', async (req, res) => {
-//     return res.send({
-//         error: false,
-//         payload: { users: 'these are the available users' }
-//     })
-// })
-
 
 // User Signup
 Router.post('/', imageUpload, async (req, res) => {
@@ -202,6 +195,7 @@ Router.post('/resources', verifyToken, async (req, res) => {
     }
 })
 
+// Get user's saved resources
 Router.get('/resources', verifyToken, async (req, res) => {
     const userEmail = req.user.email;
 
@@ -234,6 +228,54 @@ Router.get('/resources', verifyToken, async (req, res) => {
     }
 })
 
+
+// Update user Details
+Router.put('/', verifyToken, async (req, res) => {
+    try {
+        const originalEmail = req.user.email
+        const updatedUser = await User.findOneAndUpdate({ email: originalEmail }, req.body, { new: true }); // {new:true} returns updated user detail
+        return res.send({
+            error: false,
+            message: "User updated successfully.",
+            payload: {
+                user: updatedUser,
+            }
+        })
+    } catch (error) {
+        console.error(error);
+        return res.send({
+            error: true,
+            message: "Something went wrong."
+        })
+    }
+})
+
+Router.put("/avatar", verifyToken, imageUpload, async (req, res) => {
+    const { email } = req.user;
+
+    if (!req.file) {
+        return res.send({
+            error: true,
+            message: "Please upload valid user avatar."
+        })
+    } else {
+        const filename = req.file.filename;
+
+        const user = await User.findOne({ email });
+
+        deleteFile(user.avatar, 'images'); // delete old user avatar
+
+        user.avatar = filename;
+
+        const savedUser = await user.save();
+
+        return res.send({
+            error: false,
+            message: "User avatar changed successfully.",
+            payload: { user: savedUser }
+        })
+    }
+})
 
 
 module.exports = Router;
