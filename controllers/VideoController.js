@@ -6,6 +6,24 @@ const Video = require('../models/VideoModel');
 const verifyToken = require("../middlewares/verifyToken");
 
 
+Router.get("/:classId", verifyToken, async (req, res) => {
+    const { classId } = req.params;
+
+    try {
+        const videos = await Class.findById(classId).populate('videos');
+        return res.send({
+            error: false,
+            message: "Successfully fetched class videos",
+            payload: { videos: videos.videos }
+        })
+    } catch (error) {
+        return res.send({
+            error: true,
+            message: "Something went wrong."
+        })
+    }
+})
+
 Router.post("/", verifyToken, async (req, res) => {
     try {
         const { classId, name, url } = req.body;
@@ -69,6 +87,10 @@ Router.delete('/:videoId', verifyToken, async (req, res) => {
             })
         }
         const deletedVideo = await Video.findByIdAndDelete(videoId);
+        const videoClass = await Class.findById(deletedVideo.classId);
+        videoClass.videos.splice(videoClass.videos.indexOf(deletedVideo._id), 1);
+        await videoClass.save();
+
         return res.send({
             error: false,
             message: "Video deleted successfully",
