@@ -55,6 +55,10 @@ const ClassSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    videos: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Video'
+    }]
 
 
 

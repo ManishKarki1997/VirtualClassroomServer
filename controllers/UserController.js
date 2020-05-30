@@ -250,6 +250,7 @@ Router.put('/', verifyToken, async (req, res) => {
     }
 })
 
+// Update user avatar
 Router.put("/avatar", verifyToken, imageUpload, async (req, res) => {
     const { email } = req.user;
 

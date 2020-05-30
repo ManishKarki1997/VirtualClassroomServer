@@ -32,16 +32,19 @@ const UserController = require('./controllers/UserController');
 const ClassController = require('./controllers/ClassController');
 const NotificationController = require('./controllers/NotificationController');
 const ResourceController = require('./controllers/ResourceController');
+const VideoController = require('./controllers/VideoController');
 
 
 app.use('/api/user', UserController);
 app.use('/api/class', ClassController);
 app.use('/api/resource', ResourceController);
 app.use('/api/notification', NotificationController);
+app.use('/api/video', VideoController);
 
 // make uploads folder available for public access
 app.use('/uploads', express.static('uploads'));
 
+mongoose.set('useFindAndModify', false);
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
