@@ -7,7 +7,9 @@ const socket = require('socket.io');
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/virtualclassroom';
 
+// import sockets
 const { sockets } = require('./sockets/socket');
+const chatSockets = require('./sockets/chatSocket');
 
 const app = express();
 const server = app.listen(PORT, () => {
@@ -15,7 +17,9 @@ const server = app.listen(PORT, () => {
 })
 
 const io = socket(server);
-sockets(io)
+
+sockets(io);
+chatSockets(io);
 
 
 
@@ -33,6 +37,7 @@ const ClassController = require('./controllers/ClassController');
 const NotificationController = require('./controllers/NotificationController');
 const ResourceController = require('./controllers/ResourceController');
 const VideoController = require('./controllers/VideoController');
+const ChatController = require('./controllers/ChatMessageController');
 
 
 app.use('/api/user', UserController);
@@ -40,6 +45,7 @@ app.use('/api/class', ClassController);
 app.use('/api/resource', ResourceController);
 app.use('/api/notification', NotificationController);
 app.use('/api/video', VideoController);
+app.use("/api/chat", ChatController);
 
 // make uploads folder available for public access
 app.use('/uploads', express.static('uploads'));

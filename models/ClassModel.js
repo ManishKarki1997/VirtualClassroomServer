@@ -58,6 +58,10 @@ const ClassSchema = mongoose.Schema({
     videos: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Video'
+    }],
+    chatMessages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ChatMessage'
     }]
 
 

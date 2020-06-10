@@ -26,13 +26,14 @@ Router.get("/:classId", verifyToken, async (req, res) => {
 
 Router.post("/", verifyToken, async (req, res) => {
     try {
-        const { classId, name, url } = req.body;
+        const { classId, name, url, createdBy } = req.body;
 
         const userClass = await Class.findById(classId);
         const video = new Video({
             classId,
             name,
-            url
+            url,
+            createdBy
         })
 
         const savedVideo = await video.save();
@@ -42,7 +43,7 @@ Router.post("/", verifyToken, async (req, res) => {
 
         return res.send({
             error: false,
-            message: "Video saved successfully",
+            message: "Video added successfully",
             payload: { video: savedVideo }
         })
 
@@ -57,7 +58,6 @@ Router.post("/", verifyToken, async (req, res) => {
 
 Router.put('/', verifyToken, async (req, res) => {
     const { videoId, name, url } = req.body;
-
     try {
         const video = await Video.findOneAndUpdate({ _id: videoId }, req.body, { new: true, }); // {new:true} returns updated video details
 
@@ -77,7 +77,6 @@ Router.put('/', verifyToken, async (req, res) => {
 
 Router.delete('/:videoId', verifyToken, async (req, res) => {
     const { videoId } = req.params;
-
     try {
         const video = await Video.findById(videoId).populate('createdBy');
         if (video.createdBy.email !== req.user.email) {
