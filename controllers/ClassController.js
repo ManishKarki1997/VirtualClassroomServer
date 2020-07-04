@@ -5,6 +5,7 @@ require("dotenv").config();
 // Models
 const Class = require("../models/ClassModel");
 const User = require("../models/UserModel");
+const Notification = require("../models/NotificationModel");
 
 // Helpers
 const deleteImage = require("../helpers/deleteFile");
@@ -104,6 +105,26 @@ Router.post("/", verifyToken, imageUpload, async (req, res) => {
     return res.send({
       error: true,
       message: error,
+    });
+  }
+});
+
+Router.get("/:classId/students", verifyToken, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const classroom = await Class.findById(classId).populate("users");
+    return res.send({
+      error: false,
+      payload: {
+        users: classroom.users,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong retrieving the classroom students",
+      payload: error,
     });
   }
 });
@@ -305,6 +326,19 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
       await classToJoin.save();
 
+      const notification = new Notification({
+        title: `Your request to join the class ${classToJoin.name} has been rejected.`,
+        classId,
+        createdBy: classToJoin.createdBy,
+        intendedForUser: true,
+        intendedUser: userId,
+      });
+
+      const savedNotification = notification.save();
+      const theUser = await User.findById(userId);
+      theUser.notifications.push(savedNotification._id);
+      await theUser.save();
+
       return res.send({
         error: false,
         message: "The request to join the class has been denied.",
@@ -317,6 +351,17 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       user.joinedClasses.push(classId);
       classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
       classToJoin.users.push(userId);
+
+      const notification = new Notification({
+        title: `Your request to join the class ${classToJoin.name} has been accepted.`,
+        classId,
+        createdBy: classToJoin.createdBy,
+        intendedForUser: true,
+        intendedUser: userId,
+      });
+
+      const savedNotification = await notification.save();
+      user.notifications.push(savedNotification._id);
       await user.save();
       await classToJoin.save();
 
@@ -326,6 +371,7 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong.",
