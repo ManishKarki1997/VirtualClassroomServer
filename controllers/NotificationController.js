@@ -3,7 +3,10 @@ const Class = require("../models/ClassModel");
 const User = require("../models/UserModel");
 const Router = express.Router();
 const Notification = require("../models/NotificationModel");
+const { verify } = require("jsonwebtoken");
+const verifyToken = require("../middlewares/verifyToken");
 
+// get notifications of a user
 Router.get("/:userId", async (req, res) => {
   try {
     // const notifications = await User.findById(req.params.userId);
@@ -20,6 +23,7 @@ Router.get("/:userId", async (req, res) => {
   }
 });
 
+// create a notification
 Router.post("/", async (req, res) => {
   const { title, content, createdBy, classId } = req.body;
   try {
@@ -51,6 +55,28 @@ Router.post("/", async (req, res) => {
     return res.send({
       error: true,
       message: error,
+    });
+  }
+});
+
+// mark a notification as read
+Router.post("/read", verifyToken, async (req, res) => {
+  try {
+    const notification = await Notification.findById(req.body.notificationId);
+    if (notification && notification.notificationReadByUser !== undefined) {
+      notification.notificationReadByUser = true;
+    }
+    await notification.save();
+    return res.send({
+      error: false,
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong while marking the notification as read.",
+      payload: error,
     });
   }
 });

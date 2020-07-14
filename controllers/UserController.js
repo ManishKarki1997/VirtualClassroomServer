@@ -125,6 +125,28 @@ Router.post("/login", async (req, res) => {
   }
 });
 
+// get user details
+Router.get("/details", verifyToken, async (req, res) => {
+  try {
+    const { email } = req.user;
+    const user = await User.findOne({ email });
+    user.password = undefined;
+    return res.send({
+      error: false,
+      payload: {
+        user,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong while fetching your profile",
+      payload: error,
+    });
+  }
+});
+
 // Get user's enrolled or teaching classes detail
 Router.get("/classes", verifyToken, async (req, res) => {
   try {

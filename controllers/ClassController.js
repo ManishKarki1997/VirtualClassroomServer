@@ -16,6 +16,7 @@ const ClassValidator = require("../validators/ClassValidator");
 // Middlewares
 const imageUpload = require("../middlewares/imageUpload");
 const verifyToken = require("../middlewares/verifyToken");
+const { min } = require("../validators/ClassValidator");
 
 // Fetch all classes
 Router.get("/", verifyToken, async (req, res) => {
@@ -327,7 +328,7 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       await classToJoin.save();
 
       const notification = new Notification({
-        title: `Your request to join the class ${classToJoin.name} has been rejected.`,
+        title: `Your request to join the class '${classToJoin.name}' has been rejected.`,
         classId,
         createdBy: classToJoin.createdBy,
         intendedForUser: true,
@@ -375,6 +376,64 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
     return res.send({
       error: true,
       message: "Something went wrong.",
+    });
+  }
+});
+
+// find upcoming classes
+Router.get("/upcoming", verifyToken, async (req, res) => {
+  try {
+    const { email } = req.user;
+    const user = await User.findOne({ email }).populate("joinedClasses");
+    const userClasses = user.joinedClasses.slice(0, 4);
+
+    const timeFormattedUserClasses = userClasses.map((c) => ({
+      ...c._doc,
+      amOrPm: c.startTime.split(" ")[1],
+      numericStartTime: c.startTime.split(" ")[0].split(":"),
+    }));
+
+    const date = new Date();
+
+    // get the hours and minutes for current time
+    const hrs = date.toLocaleTimeString().split(" ")[0].split(":")[0];
+    const minutes = date.toLocaleTimeString().split(" ")[0].split(":")[1];
+    // const currentAmOrPm = date.toLocaleTimeString().split(" ")[1];
+
+    // current time in seconds
+    const currentTimeInNumbers = hrs * 60 * 60 + minutes * 60;
+
+    // basically find the number of seconds for upcoming class
+    // looks ugly, but works...
+    // slightly overestimates the time by a couple minutes
+
+    const formattedClassWithTime = timeFormattedUserClasses.map((c) => {
+      // class start time in seconds = class' scheduled start time in seconds - current time in seconds
+      let startTimeInSeconds = c.numericStartTime[0] * 60 * 60 + c.numericStartTime[1] * 60 - currentTimeInNumbers;
+
+      // if start time < 0 i.e. if they are 12 hrs apart. for example, 1:00 am class schedule time, but current time is 2:00 pm
+      // just add 12 hrs -> 12 * 60 * 60 seconds in start time
+      if (startTimeInSeconds < 0) {
+        // currentAmOrPm !== c.amOrPm
+        startTimeInSeconds = startTimeInSeconds + 12 * 60 * 60;
+      }
+      return {
+        ...c,
+        upcomingClassTimeInSeconds: startTimeInSeconds,
+      };
+    });
+
+    const sortedUpcomingClass = formattedClassWithTime.sort((a, b) => a.upcomingClassTimeInSeconds - b.upcomingClassTimeInSeconds);
+
+    return res.send(sortedUpcomingClass);
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong fetching your upcoming classes",
+      payload: {
+        error,
+      },
     });
   }
 });

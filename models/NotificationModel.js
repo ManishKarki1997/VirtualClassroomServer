@@ -30,7 +30,10 @@ const NotificationSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-
+  notificationReadByUser: {
+    type: Boolean,
+    default: false,
+  },
   readBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
