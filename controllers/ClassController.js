@@ -425,7 +425,13 @@ Router.get("/upcoming", verifyToken, async (req, res) => {
 
     const sortedUpcomingClass = formattedClassWithTime.sort((a, b) => a.upcomingClassTimeInSeconds - b.upcomingClassTimeInSeconds);
 
-    return res.send(sortedUpcomingClass);
+    return res.send({
+      error: false,
+      message: "Successfully fetched upcoming classes",
+      payload: {
+        upcomingClasses: sortedUpcomingClass,
+      },
+    });
   } catch (error) {
     console.log(error);
     return res.send({

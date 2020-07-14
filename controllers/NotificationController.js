@@ -6,16 +6,17 @@ const Notification = require("../models/NotificationModel");
 const { verify } = require("jsonwebtoken");
 const verifyToken = require("../middlewares/verifyToken");
 
-// get notifications of a user
+// get notifications for a user
 Router.get("/:userId", async (req, res) => {
   try {
-    // const notifications = await User.findById(req.params.userId);
     const user = await User.findById(req.params.userId).populate("notifications");
+    const sortedNotifications = user.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.send({
       error: false,
-      payload: user.notifications,
+      payload: sortedNotifications,
     });
   } catch (error) {
+    console.log("error", error);
     return res.send({
       error: true,
       message: error,
