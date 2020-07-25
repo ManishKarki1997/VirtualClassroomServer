@@ -49,6 +49,7 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
       classId,
       createdBy,
       resourceUrl: req.file.filename,
+      fileType: req.resourceFileType,
     });
 
     const notification = new Notification({

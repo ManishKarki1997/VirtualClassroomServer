@@ -14,10 +14,19 @@ const storage = multer.diskStorage({
 
 // File Filters
 let fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ["application/msword", "application/epub+zip", "image/jpeg", "application/vnd.ms-powerpoint", "application/rtf", "application/vnd.rar", "application/zip", "image/png", "application/pdf", "font/otf"];
+  const allowedMimeTypes = ["application/msword", "application/epub+zip", "image/jpeg", "application/vnd.ms-powerpoint", "application/rtf", "application/vnd.rar", "application/zip", "application/x-zip-compressed", "image/png", "application/pdf", "font/otf"];
 
   // If user uploaded file's mimetype is not valid, return an error message
   if (allowedMimeTypes.includes(file.mimetype)) {
+    if (file.mimetype === "image/png" || file.mimetype === "image/jpeg") {
+      req.resourceFileType = "image";
+    } else if ((file.mimetype === "application/msword" || file.mimetype === "application/vnd.ms-powerpoint" || file.mimetype === "application/rtf", file.mimetype === "application/pdf")) {
+      req.resourceFileType = "office";
+    } else if (file.mimetype === "application/epub+zip" || file.mimetype === "application/vnd.rar" || file.mimetype === "application/zip" || file.mimetype === "application/x-zip-compressed") {
+      req.resourceFileType = "zip";
+    } else {
+      req.resourceFileType = "other";
+    }
     cb(null, true);
   } else {
     cb(
