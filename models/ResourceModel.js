@@ -35,6 +35,10 @@ const ResourceSchema = mongoose.Schema({
     type: String,
     default: "office",
   },
+  fileSize: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

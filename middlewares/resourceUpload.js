@@ -14,6 +14,8 @@ const storage = multer.diskStorage({
 
 // File Filters
 let fileFilter = (req, file, cb) => {
+  console.log(file);
+  console.log(file.fileSize);
   const allowedMimeTypes = ["application/msword", "application/epub+zip", "image/jpeg", "application/vnd.ms-powerpoint", "application/rtf", "application/vnd.rar", "application/zip", "application/x-zip-compressed", "image/png", "application/pdf", "font/otf"];
 
   // If user uploaded file's mimetype is not valid, return an error message

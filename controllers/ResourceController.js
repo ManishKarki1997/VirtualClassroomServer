@@ -1,5 +1,7 @@
 const express = require("express");
 const Router = express.Router();
+const fs = require("fs");
+const path = require("path");
 
 // Models import
 const Resource = require("../models/ResourceModel");
@@ -42,6 +44,12 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
     const theClass = await Class.findById(classId);
     const user = await User.findOne({ email });
 
+    const pathToResourceFile = path.resolve(process.cwd(), "uploads", "resources", req.file.filename);
+    if (fs.existsSync(pathToResourceFile)) {
+      const stats = fs.statSync(pathToResourceFile);
+      req.fileSize = stats["size"];
+    }
+
     // create a new resource
     const resource = new Resource({
       name,
@@ -50,6 +58,7 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
       createdBy,
       resourceUrl: req.file.filename,
       fileType: req.resourceFileType,
+      fileSize: req.fileSize,
     });
 
     const notification = new Notification({
