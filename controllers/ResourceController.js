@@ -167,9 +167,21 @@ Router.get("/user/resources", verifyToken, async (req, res) => {
     const savedResources = user.savedResources;
 
     const userClasses = user.joinedClasses;
+    const userCreatedClasses = user.createdClasses;
+
     let allResources = [];
     await Promise.all(
       userClasses.map(async (userClass) => {
+        const classResources = await Class.findById(userClass).populate("resources");
+        allResources.push({
+          className: classResources.name,
+          classId: classResources._id,
+          resources: classResources.resources,
+        });
+      })
+    );
+    await Promise.all(
+      userCreatedClasses.map(async (userClass) => {
         const classResources = await Class.findById(userClass).populate("resources");
         allResources.push({
           className: classResources.name,

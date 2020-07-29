@@ -7,6 +7,7 @@ require("dotenv").config();
 // Models
 const User = require("../models/UserModel");
 const Class = require("../models/ClassModel");
+const ResourceFolder = require("../models/ResourceFolder");
 
 // Helpers
 const deleteFile = require("../helpers/deleteFile");
@@ -67,6 +68,16 @@ Router.post("/", imageUpload, async (req, res) => {
 
     const result = await user.save();
 
+    const resourceFolder = new ResourceFolder({
+      userId: result._id,
+      folderName: "Uncategorized",
+    });
+
+    const savedFolder = await resourceFolder.save();
+    const savedUser = await User.findById(result._id);
+    savedUser.resourceFolders.push(savedFolder._id);
+    const updatedUser = await savedUser.save();
+
     // don't send password property
     result.password = undefined;
 
@@ -74,7 +85,7 @@ Router.post("/", imageUpload, async (req, res) => {
     return res.send({
       error: false,
       payload: {
-        user: result,
+        user: updatedUser,
         jwtToken,
       },
     });
