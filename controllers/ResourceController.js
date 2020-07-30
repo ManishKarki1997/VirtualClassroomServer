@@ -16,6 +16,7 @@ const { setNotificationRecipients } = require("../sockets/socket");
 // Middlewares
 const resourceUpload = require("../middlewares/resourceUpload");
 const verifyToken = require("../middlewares/verifyToken");
+const ResourceFolder = require("../models/ResourceFolder");
 
 // fetch all resources of a class
 Router.get("/:classId", async (req, res) => {
@@ -37,12 +38,13 @@ Router.get("/:classId", async (req, res) => {
 
 // Create a resource
 Router.post("/", verifyToken, resourceUpload, async (req, res) => {
-  const { name, description, createdBy, classId } = req.body;
+  const { name, description, createdBy, classId, folderId } = req.body;
   const { email } = req.user;
 
   try {
     const theClass = await Class.findById(classId);
     const user = await User.findOne({ email });
+    const resourceFolder = await ResourceFolder.findById(folderId);
 
     const pathToResourceFile = path.resolve(process.cwd(), "uploads", "resources", req.file.filename);
     if (fs.existsSync(pathToResourceFile)) {
@@ -72,6 +74,9 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
 
     // save the resource to the database
     const result = await resource.save();
+
+    resourceFolder.resources.push(result._id);
+    await resourceFolder.save();
 
     const classUsers = theClass.users;
     await Promise.all(

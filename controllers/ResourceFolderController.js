@@ -39,6 +39,73 @@ Router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+// Get all resource folders of all classes for a user
+Router.get("/allResources", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email });
+
+    const userResourceFolders = await ResourceFolder.find({ isForClass: false, userId: user._id }).populate("resources");
+    const userJoinedClasses = user.joinedClasses;
+    const userCreatedClasses = user.createdClasses;
+
+    let allResourcesFolders = [];
+    await Promise.all(
+      userCreatedClasses.map(async (userClass) => {
+        const classResourceFolders = await ResourceFolder.findOne({ classId: userClass, isForClass: true, userId: user._id }).populate({
+          path: "resources classId",
+          populate: {
+            path: "resourceFolders",
+            populate: {
+              path: "resources",
+            },
+          },
+        });
+
+        allResourcesFolders.push({
+          className: classResourceFolders.classId.name,
+          classDescription: classResourceFolders.classId.description,
+          classId: classResourceFolders.classId._id,
+          resourceFolders: classResourceFolders.classId.resourceFolders,
+        });
+      })
+    );
+    await Promise.all(
+      userJoinedClasses.map(async (userClass) => {
+        const classResourceFolders = await ResourceFolder.findOne({ classId: userClass, isForClass: true, userId: user._id }).populate({
+          path: "resources classId",
+          populate: {
+            path: "resourceFolders",
+            populate: {
+              path: "resources",
+            },
+          },
+        });
+
+        allResourcesFolders.push({
+          className: classResourceFolders.classId.name,
+          classDescription: classResourceFolders.classId.description,
+          classId: classResourceFolders.classId._id,
+          resourceFolders: classResourceFolders.classId.resourceFolders,
+        });
+      })
+    );
+    return res.send({
+      error: false,
+      userResourceFolders,
+      resourceFolders: allResourcesFolders,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong while fetching class resources",
+      payload: {
+        error,
+      },
+    });
+  }
+});
+
 // Get a folder's resources
 Router.get("/:folderId", verifyToken, async (req, res) => {
   try {

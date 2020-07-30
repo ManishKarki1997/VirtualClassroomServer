@@ -9,6 +9,14 @@ const ResourceFolderSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+  isForClass: {
+    type: Boolean,
+    default: false,
+  },
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Class",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

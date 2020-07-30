@@ -42,6 +42,12 @@ const ClassSchema = mongoose.Schema({
       ref: "User",
     },
   ],
+  resourceFolders: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ResourceFolder",
+    },
+  ],
   resources: [
     {
       type: mongoose.Schema.Types.ObjectId,

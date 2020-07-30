@@ -5,6 +5,7 @@ require("dotenv").config();
 // Models
 const Class = require("../models/ClassModel");
 const User = require("../models/UserModel");
+const ResourceFolder = require("../models/ResourceFolder");
 const Notification = require("../models/NotificationModel");
 
 // Helpers
@@ -16,7 +17,6 @@ const ClassValidator = require("../validators/ClassValidator");
 // Middlewares
 const imageUpload = require("../middlewares/imageUpload");
 const verifyToken = require("../middlewares/verifyToken");
-const { min } = require("../validators/ClassValidator");
 
 // Fetch all classes
 Router.get("/", verifyToken, async (req, res) => {
@@ -92,7 +92,18 @@ Router.post("/", verifyToken, imageUpload, async (req, res) => {
 
     const result = await newClass.save();
 
+    const resourceFolder = new ResourceFolder({
+      folderName: name,
+      userId: createdBy,
+      classId: result._id,
+      isForClass: true,
+    });
+
+    const savedResourceFolder = await resourceFolder.save();
+
     const classWithUserDetails = await Class.findById(result._id).populate("createdBy");
+    classWithUserDetails.resourceFolders.push(savedResourceFolder._id);
+    await classWithUserDetails.save();
 
     // add the newly created class reference to that user
     user.createdClasses.push(result._id);
@@ -103,6 +114,7 @@ Router.post("/", verifyToken, imageUpload, async (req, res) => {
       payload: { result: classWithUserDetails },
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: error,
