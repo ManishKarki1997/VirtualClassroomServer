@@ -8,6 +8,7 @@ const Resource = require("../models/ResourceModel");
 const Class = require("../models/ClassModel");
 const Notification = require("../models/NotificationModel");
 const User = require("../models/UserModel");
+const ResourceFolder = require("../models/ResourceFolder");
 
 // helpers
 const deleteFile = require("../helpers/deleteFile");
@@ -16,7 +17,6 @@ const { setNotificationRecipients } = require("../sockets/socket");
 // Middlewares
 const resourceUpload = require("../middlewares/resourceUpload");
 const verifyToken = require("../middlewares/verifyToken");
-const ResourceFolder = require("../models/ResourceFolder");
 
 // fetch all resources of a class
 Router.get("/:classId", async (req, res) => {
@@ -63,14 +63,17 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
       fileSize: req.fileSize,
     });
 
-    const notification = new Notification({
-      title: `${user.name} has added a file in ${theClass.name}.`,
-      createdBy: user._id,
-      classId: classId,
-      resourceUrl: req.file.filename,
-    });
+    // const notification = new Notification({
+    //   title: `${user.name} has added a file in ${theClass.name}.`,
+    //   createdBy: user._id,
+    //   classId: classId,
+    //   resourceUrl: req.file.filename,
+    //   image: theClass.backgroundImage,
+    //   imagePurposeType: "ResourceAdded",
+    //   imageTargetUrl: theClass._id,
+    // });
 
-    const savedNotification = await notification.save();
+    // const savedNotification = await notification.save();
 
     // save the resource to the database
     const result = await resource.save();
@@ -78,15 +81,15 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
     resourceFolder.resources.push(result._id);
     await resourceFolder.save();
 
-    const classUsers = theClass.users;
-    await Promise.all(
-      classUsers.map((userId) => {
-        User.findById(userId).then((user) => {
-          user.notifications.push(savedNotification._id);
-          return user.save();
-        });
-      })
-    );
+    // const classUsers = theClass.users;
+    // await Promise.all(
+    //   classUsers.map((userId) => {
+    //     User.findById(userId).then((user) => {
+    //       user.notifications.push(savedNotification._id);
+    //       return user.save();
+    //     });
+    //   })
+    // );
 
     // push the resource reference to the class' resources array
     theClass.resources.push(result._id);
@@ -107,8 +110,6 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
-
     // if something goes wrong, delete the uploaded file
     if (error) {
       deleteFile(req.file.filename, "resources");

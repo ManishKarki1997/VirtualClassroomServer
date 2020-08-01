@@ -54,6 +54,12 @@ const ClassSchema = mongoose.Schema({
       ref: "Resource",
     },
   ],
+  announcements: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Announcement",
+    },
+  ],
   notifications: [
     {
       type: mongoose.Schema.Types.ObjectId,

@@ -37,6 +37,7 @@ const ResourceController = require("./controllers/ResourceController");
 const VideoController = require("./controllers/VideoController");
 const ChatController = require("./controllers/ChatMessageController");
 const ResourceFolderController = require("./controllers/ResourceFolderController");
+const AnnouncementController = require("./controllers/AnnouncementController");
 
 app.use("/api/user", UserController);
 app.use("/api/class", ClassController);
@@ -45,6 +46,7 @@ app.use("/api/notification", NotificationController);
 app.use("/api/video", VideoController);
 app.use("/api/chat", ChatController);
 app.use("/api/resourceFolder", ResourceFolderController);
+app.use("/api/announcement", AnnouncementController);
 
 // make uploads folder available for public access
 app.use("/uploads", express.static("uploads"));

@@ -48,6 +48,12 @@ const UserSchema = mongoose.Schema({
       ref: "Class",
     },
   ],
+  announcements: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Announcement",
+    },
+  ],
   createdClasses: [
     {
       type: mongoose.Schema.Types.ObjectId,

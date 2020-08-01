@@ -9,6 +9,15 @@ const NotificationSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  image: {
+    type: String,
+  },
+  imagePurposeType: {
+    type: String,
+  },
+  imageTargetUrl: {
+    type: String,
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

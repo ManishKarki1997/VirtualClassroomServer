@@ -345,6 +345,9 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
         createdBy: classToJoin.createdBy,
         intendedForUser: true,
         intendedUser: userId,
+        image: classToJoin.backgroundImage,
+        imagePurposeType: "ClassRequest",
+        imageTargetUrl: classToJoin._id,
       });
 
       const savedNotification = notification.save();
@@ -371,6 +374,9 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
         createdBy: classToJoin.createdBy,
         intendedForUser: true,
         intendedUser: userId,
+        image: classToJoin.backgroundImage,
+        imagePurposeType: "ClassRequest",
+        imageTargetUrl: classToJoin._id,
       });
 
       const savedNotification = await notification.save();
