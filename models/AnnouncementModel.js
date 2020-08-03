@@ -17,7 +17,7 @@ const AnnouncementSchema = mongoose.Schema({
     ref: "Class",
   },
   readBy: [
-    {
+    { 
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
