@@ -205,4 +205,41 @@ Router.get("/user/resources", verifyToken, async (req, res) => {
   }
 });
 
+// Update a resource File
+Router.put("/", verifyToken, async (req, res) => {
+  try {
+    const { userId, resourceId, newResourceName, newDescription } = req.body;
+    const resource = await Resource.findById(resourceId);
+    if (!resource) {
+      return res.send({
+        error: true,
+        message: "Could not find any resource with that id",
+      });
+    }
+
+    if (!resource.createdBy.equals(userId)) {
+      return res.send({
+        error: true,
+        message: "You do not have the permission to perform this action",
+      });
+    }
+
+    resource.name = newResourceName || resource.name;
+    resource.description = newDescription || resource.description;
+    const savedDescription = await resource.save();
+    return res.send({
+      error: false,
+      message: "Successfully edited the resource",
+      payload: {
+        resource: savedDescription,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong while renaming the file.",
+    });
+  }
+});
+
 module.exports = Router;
