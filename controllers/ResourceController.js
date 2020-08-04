@@ -123,11 +123,12 @@ Router.post("/", verifyToken, resourceUpload, async (req, res) => {
 
 // Delete Resource
 Router.delete("/", verifyToken, async (req, res) => {
-  const { resourceId, classId, userId } = req.body.payload;
+  const { resourceId, classId, userId, folderId } = req.body.payload;
 
   try {
     const resource = await Resource.findById(resourceId);
-    const theClass = await Class.findById(classId);
+    const folder = await ResourceFolder.findById(folderId);
+    // const theClass = await Class.findById(classId);
 
     // if the resource does not belong to the class or the user didn't create the resource,
     // deny the permission to perform the action
@@ -141,14 +142,17 @@ Router.delete("/", verifyToken, async (req, res) => {
     // delete the resource
     await Resource.findOneAndDelete(resourceId);
 
+    folder.resources.splice(folder.resources.indexOf(resourceId), 1);
+    await folder.save();
+
     // delete the resource file from the storage
     deleteFile(resource.resourceUrl, "resources");
 
     // delete the resource reference from the class' resources array
-    theClass.resources.splice(theClass.resources.indexOf(resourceId), 1);
+    // theClass.resources.splice(theClass.resources.indexOf(resourceId), 1);
 
     // save the class
-    await theClass.save();
+    // await theClass.save();
 
     return res.send({
       error: false,
