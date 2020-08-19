@@ -22,7 +22,7 @@ const UserSchema = mongoose.Schema({
   },
   contact: {
     type: String,
-    required: true,
+    // required: true,
   },
   passwordResetHash: {
     type: String,

@@ -16,7 +16,6 @@ const verifyToken = require("../middlewares/verifyToken");
 const resourceUpload = require("../middlewares/resourceUpload");
 
 const deleteFile = require("../helpers/deleteFile");
-const { verify } = require("crypto");
 
 // Get users' folders and the resources
 Router.get("/", verifyToken, async (req, res) => {
@@ -36,6 +35,7 @@ Router.get("/", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while fetching the resources",
@@ -147,15 +147,7 @@ Router.get("/single/:folderId", verifyToken, async (req, res) => {
     const { email } = req.user;
     const user = await User.findOne({ email });
     const folder = await ResourceFolder.findById(req.params.folderId).populate("resources");
-    if (!folder.userId.equals(user._id)) {
-      return res.send({
-        error: true,
-        message: "You do not have the permission to perform this action",
-        payload: {
-          folder,
-        },
-      });
-    }
+
     return res.send({
       error: false,
       message: "Resource folders fetched successfully",
@@ -164,6 +156,7 @@ Router.get("/single/:folderId", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while fetching the resources",
@@ -336,12 +329,14 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
 
 // Add new resource to folder
 Router.post("/addNewResource", verifyToken, resourceUpload, async (req, res) => {
-  const { name, description, createdBy, classId, folderId } = req.body;
+  const { name, description, createdBy, classId, folderId, userId } = req.body;
   const { email } = req.user;
+  console.log(req.body);
 
   try {
     const theClass = await Class.findById(classId);
-    const user = await User.findOne({ email });
+    // const user = await User.findOne({ email });
+    const user = await User.findById(userId);
     const resourceFolder = await ResourceFolder.findById(folderId).populate("classId");
 
     const pathToResourceFile = path.resolve(process.cwd(), "uploads", "resources", req.file.filename);
@@ -369,7 +364,6 @@ Router.post("/addNewResource", verifyToken, resourceUpload, async (req, res) => 
 
     // push the resource reference to the class' resources array
     theClass.resources.push(result._id);
-
     const notification = new Notification({
       title: `${user.name} has added a new resource file for the class ${resourceFolder.classId.name}.`,
       createdBy: user._id,
@@ -418,18 +412,18 @@ Router.post("/addNewResource", verifyToken, resourceUpload, async (req, res) => 
   }
 });
 
-// Add resource to folder
+// bookmark resource to folder
 Router.post("/addResource", verifyToken, async (req, res) => {
   try {
     const { userId, folderId, resourceId } = req.body;
 
     const resourceFolder = await ResourceFolder.findById(folderId).populate("classId");
-    if (!resourceFolder.userId.equals(userId)) {
-      return res.send({
-        error: true,
-        message: "You do not have the permission to perform this action",
-      });
-    }
+    // if (!resourceFolder.userId.equals(userId)) {
+    //   return res.send({
+    //     error: true,
+    //     message: "You do not have the permission to perform this action",
+    //   });
+    // }
 
     const alreadyExists = resourceFolder.resources.filter((r) => r.equals(resourceId));
     if (alreadyExists.length > 0) {
@@ -449,7 +443,6 @@ Router.post("/addResource", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while adding the resource to the folder",
@@ -461,22 +454,20 @@ Router.post("/addResource", verifyToken, async (req, res) => {
 });
 
 // Copy a folder to user's collection
-Router.post("/copyFolder", verify, async (req, res) => {
+Router.post("/copyFolder", verifyToken, async (req, res) => {
   try {
     const { folderId, userId } = req.body;
     const user = await User.findById(userId);
-    console.log(folderId);
     const folder = await ResourceFolder.findById(folderId);
-    console.log(folder);
-    return;
+
     if (user.resourceFolders.find((f) => f.equals(folderId))) {
       return res.send({
         error: true,
         message: "You already have this folder in your collection",
       });
     } else {
-      const folderCopy = [...folder];
-      const newFolder = new ResourceFolder([...folderCopy]);
+      const folderCopy = { ...folder, resources: folder.resources };
+      const newFolder = new ResourceFolder({ ...folderCopy });
       const savedFolder = await newFolder.save();
       user.resourceFolders.push(savedFolder._id);
 
@@ -487,7 +478,7 @@ Router.post("/copyFolder", verify, async (req, res) => {
       });
     }
   } catch (error) {
-    console.log();
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while copying the folder to your collection",
@@ -510,8 +501,7 @@ Router.post("/deleteResource", verifyToken, async (req, res) => {
         },
       });
     }
-
-    folder.resources = folder.resources.filter((r) => r !== resourceId);
+    folder.resources.splice(folder.resources.indexOf(resourceId), 1);
     const savedFolder = await folder.save();
     return res.send({
       error: false,

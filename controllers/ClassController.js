@@ -151,7 +151,6 @@ Router.post("/join", verifyToken, async (req, res) => {
     const user = await User.findById(userId);
 
     const classToJoin = await Class.findById(classId);
-
     if (classToJoin.pendingJoinRequests.indexOf(userId) > -1) {
       return res.send({
         error: true,
@@ -196,7 +195,7 @@ Router.post("/join", verifyToken, async (req, res) => {
   }
 });
 
-// Leaves joins the class
+// User leaves the class
 Router.post("/leave", verifyToken, async (req, res) => {
   const { userId, classId } = req.body;
 
@@ -218,6 +217,55 @@ Router.post("/leave", verifyToken, async (req, res) => {
       return res.send({
         error: false,
         message: "You've left the class.",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
+// Kickout a student
+// User leaves the class
+Router.post("/kickout", verifyToken, async (req, res) => {
+  const { userId, studentId, classId } = req.body;
+  try {
+    // fetch the user details
+    const user = await User.findById(userId);
+
+    const classToJoin = await Class.findById(classId);
+
+    if (!user._id.equals(classToJoin.createdBy._id)) {
+      return res.send({
+        error: true,
+        message: "You do not have the authority to perform this action.",
+      });
+    }
+    if (classToJoin.users.indexOf(studentId) >= 0) {
+      classToJoin.users.splice(classToJoin.users.indexOf(studentId), 1);
+
+      const notification = new Notification({
+        title: `You have been kick out from the class ${classToJoin.name}`,
+        intendedUser: studentId,
+        classId,
+        image: classToJoin.backgroundImage,
+        imageTargetUrl: classToJoin.imageTargetUrl,
+        createdBy: userId,
+      });
+
+      const savedNotification = await notification.save();
+
+      const student = await User.findById(studentId);
+      student.notifications.push(savedNotification._id);
+      await student.save();
+
+      await classToJoin.save();
+      return res.send({
+        error: false,
+        message: "Student kicked out from the class.",
       });
     }
   } catch (error) {

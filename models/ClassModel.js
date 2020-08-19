@@ -84,6 +84,10 @@ const ClassSchema = mongoose.Schema({
       ref: "ChatMessage",
     },
   ],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Class", ClassSchema);

@@ -2,9 +2,6 @@ const mongoose = require("mongoose");
 const { boolean } = require("@hapi/joi");
 
 const NotificationSchema = mongoose.Schema({
-  notificationId: {
-    type: String,
-  },
   title: {
     type: String,
     required: true,

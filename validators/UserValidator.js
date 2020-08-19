@@ -1,23 +1,20 @@
-const Joi = require('@hapi/joi');
+const Joi = require("@hapi/joi");
 
 const userSchema = Joi.object({
-    email: Joi.string()
-        .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
-        .required(),
+  email: Joi.string()
+    .email({ minDomainSegments: 2, tlds: { allow: ["com", "net"] } })
+    .required(),
 
-    password: Joi.string()
-        .pattern(new RegExp('^[a-zA-Z0-9]{8,30}$')),
+  password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{8,30}$")),
 
-    avatar: Joi.string(),
+  avatar: Joi.string(),
 
-    name: Joi.string()
-        .min(3)
-        .max(36),
+  name: Joi.string().min(3).max(36),
 
-    contact: Joi.number()
-        // .min(9)
-        // .max(12)
-        .required()
-})
+  //   contact: Joi.number(),
+  // .min(9)
+  // .max(12)
+  // .required()
+});
 
 module.exports = userSchema;

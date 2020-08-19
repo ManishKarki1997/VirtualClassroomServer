@@ -16,18 +16,41 @@ const Announcement = require("../models/AnnouncementModel");
 const verifyToken = require("../middlewares/verifyToken");
 
 // Get user's annoucement details
-Router.get("/:userId", verifyToken, async (req, res) => {
+Router.get("/user/:userId", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).populate({
       path: "announcements",
       populate: {
-        path: "classId ",
+        path: "classId",
       },
     });
     return res.send({
       error: false,
       payload: {
         announcements: user.announcements,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Couldn't fetch announcements for you right now.",
+    });
+  }
+});
+
+// Get a classroom's announcements
+Router.get("/class/:classId", verifyToken, async (req, res) => {
+  try {
+    const theClass = await Class.findById(req.params.classId).populate({
+      path: "announcements",
+      populate: {
+        path: "classId",
+      },
+    });
+    return res.send({
+      error: false,
+      payload: {
+        announcements: theClass.announcements,
       },
     });
   } catch (error) {
