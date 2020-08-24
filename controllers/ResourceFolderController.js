@@ -71,6 +71,7 @@ Router.get("/allResources", verifyToken, async (req, res) => {
           if (!classResourceFolders) return;
           allResourcesFolders.push({
             className: classResourceFolders.classId.name,
+            classBackgroundImage: classResourceFolders.classId.backgroundImage,
             classDescription: classResourceFolders.classId.description,
             classId: classResourceFolders.classId._id,
             resourceFolders: classResourceFolders.classId.resourceFolders,
@@ -95,6 +96,7 @@ Router.get("/allResources", verifyToken, async (req, res) => {
 
           allResourcesFolders.push({
             className: classResourceFolders.classId.name,
+            classBackgroundImage: classResourceFolders.classId.backgroundImage,
             classDescription: classResourceFolders.classId.description,
             classId: classResourceFolders.classId._id,
             resourceFolders: classResourceFolders.classId.resourceFolders,
@@ -365,7 +367,7 @@ Router.post("/addNewResource", verifyToken, resourceUpload, async (req, res) => 
     // push the resource reference to the class' resources array
     theClass.resources.push(result._id);
     const notification = new Notification({
-      title: `${user.name} has added a new resource file for the class ${resourceFolder.classId.name}.`,
+      title: `${user.name} has added a new resource file for the class <strong>${resourceFolder.classId.name}</strong>.`,
       createdBy: user._id,
       classId: resourceFolder.classId._id,
       resourceUrl: req.file.filename,
@@ -466,6 +468,7 @@ Router.post("/copyFolder", verifyToken, async (req, res) => {
         message: "You already have this folder in your collection",
       });
     } else {
+      console.log(folder);
       const folderCopy = { ...folder, resources: folder.resources };
       const newFolder = new ResourceFolder({ ...folderCopy });
       const savedFolder = await newFolder.save();

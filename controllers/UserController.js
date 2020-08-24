@@ -149,7 +149,6 @@ Router.get("/details", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while fetching your profile",

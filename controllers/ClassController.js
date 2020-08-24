@@ -161,7 +161,7 @@ Router.post("/join", verifyToken, async (req, res) => {
     // if the user has already joined the class, leave the class
     if (user.joinedClasses.indexOf(classId) > -1) {
       return res.send({
-        error: false,
+        error: true,
         message: "You're already enrolled in the class.",
       });
     } else {
@@ -211,6 +211,17 @@ Router.post("/leave", verifyToken, async (req, res) => {
       classToJoin.users.splice(classToJoin.users.indexOf(userId), 1);
       // classToJoin.pendingJoinRequests.splice(classToJoin.users.indexOf(userId), 1);
 
+      const notification = new Notification({
+        title: `<strong>${user.name}</strong> has left the class <strong>${classToJoin.name}</strong>`,
+        intendedUser: classToJoin.createdBy,
+        classId,
+        image: classToJoin.backgroundImage,
+        imageTargetUrl: classToJoin.imageTargetUrl,
+        createdBy: userId,
+      });
+
+      const savedNotification = await notification.save();
+
       await user.save();
       await classToJoin.save();
 
@@ -248,7 +259,7 @@ Router.post("/kickout", verifyToken, async (req, res) => {
       classToJoin.users.splice(classToJoin.users.indexOf(studentId), 1);
 
       const notification = new Notification({
-        title: `You have been kick out from the class ${classToJoin.name}`,
+        title: `You have been kick out from the class <strong>${classToJoin.name}</strong>`,
         intendedUser: studentId,
         classId,
         image: classToJoin.backgroundImage,
@@ -388,7 +399,7 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       await classToJoin.save();
 
       const notification = new Notification({
-        title: `Your request to join the class '${classToJoin.name}' has been rejected.`,
+        title: `Your request to join the class <strong>${classToJoin.name}</strong> has been rejected.`,
         classId,
         createdBy: classToJoin.createdBy,
         intendedForUser: true,
@@ -417,7 +428,7 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       classToJoin.users.push(userId);
 
       const notification = new Notification({
-        title: `Your request to join the class ${classToJoin.name} has been accepted.`,
+        title: `Your request to join the class <strong>${classToJoin.name}</strong> has been accepted.`,
         classId,
         createdBy: classToJoin.createdBy,
         intendedForUser: true,

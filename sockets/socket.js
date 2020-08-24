@@ -4,6 +4,8 @@ const User = require("../models/UserModel");
 let users = []; // holds all online users in a class
 let allActiveUsers = []; // holds all the online users
 
+let peers = {};
+
 let liveOnlineClasses = {};
 // let notificationRecipients = [];
 
@@ -142,6 +144,38 @@ function sockets(io) {
       io.to(socket.id).emit("all_live_classes", activeOnlineClasses);
       // console.log(activeOnlineClasses)
     });
+
+    // --------------------------------------------------------------- //
+    // Simple Peer
+    // --------------------------------------------------------------- //
+
+    socket.on("initialiseClass", ({ classroomId, user }) => {
+      peers[socket.id] = socket;
+      // const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
+      // console.log(activeRoomSockets.sockets);
+      for (let id in peers) {
+        console.log(id, socket.id);
+        if (id == socket.id) continue;
+        peers[id].emit("initReceive", socket.id);
+      }
+    });
+
+    socket.on("signal", (data) => {
+      if (!peers[data.socketId]) return;
+
+      peers[data.socketId].emit("signal", {
+        socketId: socket.id,
+        signal: data.signal,
+      });
+    });
+
+    socket.on("initSend", (init_socket_id) => {
+      peers[init_socket_id].emit("initSend", socket.id);
+    });
+
+    // --------------------------------------------------------------- //
+    //      End Simple Peer
+    // --------------------------------------------------------------- //
 
     // Whiteboard Drawing
     socket.on("someone_drew", ({ classroomId, drawing }) => {
