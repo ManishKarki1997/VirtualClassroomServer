@@ -2,7 +2,11 @@ const express = require("express");
 const Router = express.Router();
 const bcrypt = require("bcryptjs");
 const JWToken = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
+
 require("dotenv").config();
+
+const nodemailer = require("nodemailer");
 
 // Models
 const User = require("../models/UserModel");
@@ -21,7 +25,7 @@ const verifyToken = require("../middlewares/verifyToken");
 
 // User Signup
 Router.post("/", imageUpload, async (req, res) => {
-  const { name, email, image, password, contact } = req.body;
+  const { name, email, image, password, contact, userType } = req.body;
   try {
     // Validate User Details
     const validationResult = UserValidator.validate(req.body);
@@ -56,6 +60,7 @@ Router.post("/", imageUpload, async (req, res) => {
 
     // create a new user
     const user = new User({
+      userType,
       name,
       email,
       contact,
@@ -153,6 +158,90 @@ Router.get("/details", verifyToken, async (req, res) => {
       error: true,
       message: "Something went wrong while fetching your profile",
       payload: error,
+    });
+  }
+});
+
+// request reset password
+Router.post("/requestPasswordReset", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    const passwordResetToken = uuidv4();
+    const currentDate = new Date();
+    user.passwordResetToken = passwordResetToken;
+    user.passwordResetTokenExpiryDate = currentDate.setHours(currentDate.getHours() + 2);
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_EMAIL,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: "eclassroom@gmail.com",
+      to: req.body.email,
+      subject: "Reset your password",
+      html: `
+        <h1>Reset Your Password</h1>
+        <p>Please click <a href='https://localhost:8080/reset/${passwordResetToken}'>here</a> to reset your password</p>
+        <p>Didn't request to reset your password? Kindly ignore this email.</p>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        return res.send({
+          error: true,
+          message: "Something went wrong",
+        });
+      } else {
+        return res.send({
+          error: false,
+          message: "Please check your mail to reset the password",
+        });
+      }
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong",
+    });
+  }
+});
+
+// reset password
+Router.post("/resetPassword", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (new Date(user.passwordResetTokenExpiryDate) < Date.now()) {
+      return res.send({
+        error: true,
+        message: "Password reset token expired.",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user.password = hashedPassword;
+    user.passwordResetTokenExpiryDate = "";
+    user.passwordResetToken = "";
+    await user.save();
+    return res.send({
+      error: false,
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong while resetting your password. Please try again later.",
     });
   }
 });

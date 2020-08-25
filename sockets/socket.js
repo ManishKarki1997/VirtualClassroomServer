@@ -149,28 +149,44 @@ function sockets(io) {
     // Simple Peer
     // --------------------------------------------------------------- //
 
-    socket.on("initialiseClass", ({ classroomId, user }) => {
-      peers[socket.id] = socket;
+    socket.on("initialiseClass", (data) => {
+      peers[socket.id] = { ...data, socket };
+      // const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
+      // console.log(activeRoomSockets.sockets);
+      // for (let id in peers) {
+      //   if (id == socket.id) continue;
+      //   peers[id].emit("initReceive", socket.id);
+      // }
+    });
+
+    socket.on("teacherAddAnotherStream", (data) => {
+      peers[socket.id] = { ...data, socket };
+      for (let id in peers) {
+        if (id == socket.id) continue;
+        peers[id].socket.emit("initReceive", socket.id);
+      }
+    });
+    socket.on("studentJoinClass", (data) => {
+      peers[socket.id] = { ...data, socket };
       // const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
       // console.log(activeRoomSockets.sockets);
       for (let id in peers) {
-        console.log(id, socket.id);
         if (id == socket.id) continue;
-        peers[id].emit("initReceive", socket.id);
+        peers[id].socket.emit("initReceive", socket.id);
       }
     });
 
     socket.on("signal", (data) => {
       if (!peers[data.socketId]) return;
 
-      peers[data.socketId].emit("signal", {
+      peers[data.socketId].socket.emit("signal", {
         socketId: socket.id,
         signal: data.signal,
       });
     });
 
     socket.on("initSend", (init_socket_id) => {
-      peers[init_socket_id].emit("initSend", socket.id);
+      peers[init_socket_id].socket.emit("initSend", socket.id);
     });
 
     // --------------------------------------------------------------- //

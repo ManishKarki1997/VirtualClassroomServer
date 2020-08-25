@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
 
 const UserSchema = mongoose.Schema({
-  userId: {
+  userType: {
     type: String,
+    default: "STUDENT",
   },
   name: {
     type: String,
@@ -66,6 +67,14 @@ const UserSchema = mongoose.Schema({
       ref: "Notification",
     },
   ],
+  passwordResetToken: {
+    type: String,
+    default: "0",
+  },
+  passwordResetTokenExpiryDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("User", UserSchema);
