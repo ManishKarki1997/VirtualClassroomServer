@@ -421,13 +421,31 @@ Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
 });
 
 // Admin: all users
-Router.get("/admin/users", JWToken.verify, async (req, res) => {
+Router.get("/admin/users", verifyToken, async (req, res) => {
   try {
     const users = await User.find({});
     return res.send({
       error: false,
       payload: {
         users,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
+// Admin: all class resource folders
+Router.get("/admin/classResourceFolders", verifyToken, async (req, res) => {
+  try {
+    const allFolders = await ResourceFolder.find({ isForClass: true }).populate("resources");
+    return res.send({
+      error: false,
+      payload: {
+        allFolders,
       },
     });
   } catch (error) {
