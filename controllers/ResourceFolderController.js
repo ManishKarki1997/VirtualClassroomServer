@@ -460,7 +460,7 @@ Router.post("/copyFolder", verifyToken, async (req, res) => {
   try {
     const { folderId, userId } = req.body;
     const user = await User.findById(userId);
-    const folder = await ResourceFolder.findById(folderId);
+    const folder = await ResourceFolder.findById(folderId).populate("classId");
 
     if (user.resourceFolders.find((f) => f.equals(folderId))) {
       return res.send({
@@ -468,8 +468,7 @@ Router.post("/copyFolder", verifyToken, async (req, res) => {
         message: "You already have this folder in your collection",
       });
     } else {
-      console.log(folder);
-      const folderCopy = { ...folder, resources: folder.resources };
+      const folderCopy = { ...folder, folderName: folder.classId.name, resources: folder.resources, userId: user._id, isForClass: false };
       const newFolder = new ResourceFolder({ ...folderCopy });
       const savedFolder = await newFolder.save();
       user.resourceFolders.push(savedFolder._id);
