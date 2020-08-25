@@ -387,6 +387,8 @@ Router.put("/avatar", verifyToken, imageUpload, async (req, res) => {
 // ---------------------- //
 // Admin Controller //
 // ---------------------- //
+
+// Admin: dashboard meta info
 Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
   const { email } = req.user;
   try {
@@ -411,6 +413,24 @@ Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
+// Admin: all users
+Router.get("/admin/users", JWToken.verify, async (req, res) => {
+  try {
+    const users = await User.find({});
+    return res.send({
+      error: false,
+      payload: {
+        users,
+      },
+    });
+  } catch (error) {
     return res.send({
       error: true,
       message: "Something went wrong.",
