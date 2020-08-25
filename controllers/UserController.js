@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 // Models
 const User = require("../models/UserModel");
 const Class = require("../models/ClassModel");
+const Resource = require("../models/ResourceModel");
 const ResourceFolder = require("../models/ResourceFolder");
 
 // Helpers
@@ -379,6 +380,40 @@ Router.put("/avatar", verifyToken, imageUpload, async (req, res) => {
       error: false,
       message: "User avatar changed successfully.",
       payload: { user: savedUser },
+    });
+  }
+});
+
+// ---------------------- //
+// Admin Controller //
+// ---------------------- //
+Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
+  const { email } = req.user;
+  try {
+    const totalUsersCounts = await User.countDocuments();
+    const totalClassCounts = await Class.countDocuments();
+    const totalResourcesCounts = await Resource.countDocuments();
+    const totalFolderCounts = await Resource.countDocuments();
+
+    const usersSample = await User.find({}).limit(4);
+    const classSample = await Class.find({}).limit(4).populate("createdBy");
+
+    return res.send({
+      error: false,
+      payload: {
+        totalUsersCounts,
+        totalClassCounts,
+        totalResourcesCounts,
+        totalFolderCounts,
+        usersSample,
+        classSample,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
     });
   }
 });
