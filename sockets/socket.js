@@ -6,6 +6,8 @@ let allActiveUsers = []; // holds all the online users
 
 let peers = {};
 
+let typingUsers = {};
+
 let liveOnlineClasses = {};
 // let notificationRecipients = [];
 
@@ -103,6 +105,8 @@ function sockets(io) {
     socket.on("join_class", ({ classroomId, isClassroomTeacher }) => {
       // currently active sockets/users in the room
       const activeRoomSockets = io.sockets.adapter.rooms[classroomId];
+
+      typingUsers[classroomId] = { users: [] };
 
       // console.log(activeRoomSockets, socket.id)
       // if (activeRoomSockets && !(socket.id in activeRoomSockets.sockets))
@@ -203,8 +207,18 @@ function sockets(io) {
       io.to(classroomId).emit("message_received", message);
     });
 
-    socket.on("someoneIsTyping", (message) => {
-      io.to(message.classroomId).emit("someone_is_typing", message);
+    socket.on("someoneIsTyping", ({ classroomId, user }) => {
+      if (typingUsers[classroomId].users.indexOf(user) == -1) {
+        typingUsers[classroomId].users.push(user);
+      }
+      io.to(classroomId).emit("someone_is_typing", typingUsers[classroomId].users);
+    });
+
+    socket.on("notTyping", ({ classroomId, user }) => {
+      if (typingUsers[classroomId].users.indexOf(user) > -1) {
+        typingUsers[classroomId].users.splice(typingUsers[classroomId].users.indexOf(user), 1);
+        io.to(classroomId).emit("someone_is_typing", typingUsers[classroomId].users);
+      }
     });
 
     // code editor
