@@ -28,6 +28,7 @@ const ClassSchema = mongoose.Schema({
     ref: "User",
     required: true,
   },
+  activeDays: [],
   startTime: {
     type: String,
     required: true,

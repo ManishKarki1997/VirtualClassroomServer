@@ -31,6 +31,10 @@ const UserSchema = mongoose.Schema({
   passwordResetExpiration: {
     type: Date,
   },
+  isKickedOut: {
+    type: Boolean,
+    default: false,
+  },
   savedResources: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -72,6 +76,10 @@ const UserSchema = mongoose.Schema({
     default: "0",
   },
   passwordResetTokenExpiryDate: {
+    type: Date,
+    default: Date.now,
+  },
+  createdAt: {
     type: Date,
     default: Date.now,
   },

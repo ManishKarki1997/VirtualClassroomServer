@@ -13,6 +13,7 @@ const User = require("../models/UserModel");
 const Class = require("../models/ClassModel");
 const Resource = require("../models/ResourceModel");
 const ResourceFolder = require("../models/ResourceFolder");
+const Notification = require("../models/NotificationModel");
 
 // Helpers
 const deleteFile = require("../helpers/deleteFile");
@@ -423,7 +424,7 @@ Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
 // Admin: all users
 Router.get("/admin/users", verifyToken, async (req, res) => {
   try {
-    const users = await User.find({});
+    const users = await User.find({ userType: { $ne: "ADMIN" } });
     return res.send({
       error: false,
       payload: {
@@ -449,6 +450,54 @@ Router.get("/admin/classResourceFolders", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
+// Admin: delete user
+Router.post("/admin/kickout", verifyToken, async (req, res) => {
+  try {
+    const { userId, kickoutReason } = req.body;
+    const adminEmail = req.user.email;
+
+    const admin = await User.findOne({ email: adminEmail });
+    if (admin.userType !== "ADMIN") {
+      return res.send({
+        error: true,
+        message: "You do not have the permission to perform this action",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (user.isKickedOut) {
+      return res.send({
+        error: true,
+        message: "User already kicked out from the app.",
+      });
+    }
+    user.isKickedOut = true;
+
+    const notification = new Notification({
+      title: "You've been kick out from the app.",
+      description: kickoutReason,
+      createdBy: admin._id,
+      intendedForUser: true,
+      intendedUser: user._id,
+    });
+
+    const savedNotification = await notification.save();
+    user.notifications.push(savedNotification._id);
+    await user.save();
+
+    return res.send({
+      error: false,
+      message: "User successfully kicked out from the app.",
+    });
+  } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong.",

@@ -6,6 +6,9 @@ const NotificationSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+  },
   image: {
     type: String,
   },
@@ -23,7 +26,6 @@ const NotificationSchema = mongoose.Schema({
   classId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Class",
-    required: true,
   },
   resourceUrl: {
     type: String,
