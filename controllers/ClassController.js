@@ -21,7 +21,14 @@ const verifyToken = require("../middlewares/verifyToken");
 // Fetch all classes
 Router.get("/", verifyToken, async (req, res) => {
   try {
-    const classes = await Class.find({ private: false }).populate("createdBy");
+    let classes;
+    const { email } = req.user;
+    const user = await User.findOne({ email });
+    if (user.userType === "ADMIN") {
+      classes = await Class.find({}).populate("createdBy");
+    } else {
+      classes = await Class.find({ private: false }).populate("createdBy");
+    }
     return res.send({
       error: false,
       payload: { classes },

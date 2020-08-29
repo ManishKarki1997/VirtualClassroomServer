@@ -481,7 +481,7 @@ Router.post("/admin/kickout", verifyToken, async (req, res) => {
     user.isKickedOut = true;
 
     const notification = new Notification({
-      title: "You've been kick out from the app.",
+      title: "You've been kicked out from the app.",
       description: kickoutReason,
       createdBy: admin._id,
       intendedForUser: true,
@@ -501,6 +501,49 @@ Router.post("/admin/kickout", verifyToken, async (req, res) => {
     return res.send({
       error: true,
       message: "Something went wrong.",
+    });
+  }
+});
+
+// Admin: make class private
+Router.put("/admin/makeClassPrivate", verifyToken, async (req, res) => {
+  try {
+    const { userId, classId, reason } = req.body;
+
+    const admin = await User.findById(userId);
+    if (admin.userType !== "ADMIN") {
+      return res.send({
+        error: true,
+        message: "You do not have the permission to perform this action.",
+      });
+    }
+    const theClass = await Class.findById(classId);
+    const result = theClass.private ? "public" : "private";
+    theClass.private = !theClass.private;
+    await theClass.save();
+
+    const classOwner = await User.findById(theClass.createdBy);
+    const notification = new Notification({
+      title: "You've been kicked out from the app.",
+      description: reason,
+      createdBy: admin._id,
+      intendedForUser: true,
+      intendedUser: classOwner._id,
+    });
+
+    const savedNotification = await notification.save();
+    classOwner.notifications.push(savedNotification._id);
+    await classOwner.save();
+
+    return res.send({
+      error: false,
+      message: `Class set to ${result} successfully`,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong",
     });
   }
 });
