@@ -398,7 +398,7 @@ Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
     const totalResourcesCounts = await Resource.countDocuments();
     const totalFolderCounts = await Resource.countDocuments();
 
-    const usersSample = await User.find({}).limit(4);
+    const usersSample = await User.find({ userType: { $ne: "ADMIN" } }).limit(4);
     const classSample = await Class.find({}).limit(4).populate("createdBy");
 
     return res.send({
