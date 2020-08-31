@@ -17,39 +17,69 @@ const assignmentUpload = require("../middlewares/assignmentUpload");
 const verifyToken = require("../middlewares/verifyToken");
 const ClassModel = require("../models/ClassModel");
 const UserModel = require("../models/UserModel");
+const { verify } = require("jsonwebtoken");
 
 // Create an assignment
 Router.post("/", verifyToken, async (req, res) => {
-  const { title, description, createdBy, classId, dueDate } = req.body;
-  const theClass = await ClassModel.findById(classId);
-  const assignment = new AssignmentModel({ ...req.body, yetToBeSubmittedBy: [...theClass.users] });
-  const savedAssignment = await assignment.save();
+  try {
+    const { createdBy, classId } = req.body;
+    const theClass = await ClassModel.findById(classId);
+    const assignment = new AssignmentModel({ ...req.body, yetToBeSubmittedBy: [...theClass.users] });
+    const savedAssignment = await assignment.save();
+    theClass.assignments.push(savedAssignment._id);
+    await theClass.save();
 
-  if (theClass.users.length > 0) {
-    await Promise.all(
-      theClass.users.map(async (classUserId) => {
-        const classUser = await UserModel.findById(classUserId);
-        const notification = new Notification({
-          title: "New Assignment",
-          description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
-          createdBy,
-          classId,
-          intendedForUser: true,
-          intendedUser: classUserId,
-        });
-        const savedNotification = await notification.save();
-        classUser.notifications.push(savedNotification._id);
-        classUser.assignments.push(savedAssignment._id);
-        await classUser.save();
-      })
-    );
+    if (theClass.users.length > 0) {
+      await Promise.all(
+        theClass.users.map(async (classUserId) => {
+          const classUser = await UserModel.findById(classUserId);
+          const notification = new Notification({
+            title: "New Assignment",
+            description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
+            createdBy,
+            classId,
+            intendedForUser: true,
+            intendedUser: classUserId,
+          });
+          const savedNotification = await notification.save();
+          classUser.notifications.push(savedNotification._id);
+          classUser.assignments.push(savedAssignment._id);
+          await classUser.save();
+        })
+      );
 
+      return res.send({
+        error: false,
+        message: "Assignment successfully created",
+        payload: {
+          assignment: savedAssignment,
+        },
+      });
+    }
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
+// Get all assignments for a class
+Router.get("/:classId", verifyToken, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const theClass = await ClassModel.findById(classId).populate("assignments");
     return res.send({
       error: false,
-      message: "Assignment successfully created",
+      message: `Assignments successfully fetched for the class ${theClass.name}`,
       payload: {
-        assignment: savedAssignment,
+        class: theClass,
       },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong",
     });
   }
 });
