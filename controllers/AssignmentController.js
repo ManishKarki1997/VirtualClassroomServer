@@ -84,4 +84,26 @@ Router.get("/:classId", verifyToken, async (req, res) => {
   }
 });
 
+// Get all assignments for a user
+Router.get("/user/:userId", verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await UserModel.findById(userId);
+
+    const assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } }).populate("assignment");
+    return res.send({
+      error: false,
+      message: "Successfully fetch your assignments",
+      payload: {
+        assignments,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Couldn't fetch your assignments",
+    });
+  }
+});
+
 module.exports = Router;
