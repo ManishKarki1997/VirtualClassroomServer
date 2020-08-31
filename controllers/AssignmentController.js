@@ -65,7 +65,7 @@ Router.post("/", verifyToken, async (req, res) => {
 });
 
 // Get all assignments for a class
-Router.get("/:classId", verifyToken, async (req, res) => {
+Router.get("/class/:classId", verifyToken, async (req, res) => {
   try {
     const { classId } = req.params;
     const theClass = await ClassModel.findById(classId).populate("assignments");
@@ -102,6 +102,66 @@ Router.get("/user/:userId", verifyToken, async (req, res) => {
     return res.send({
       error: true,
       message: "Couldn't fetch your assignments",
+    });
+  }
+});
+
+// Get a single assignment
+Router.get("/:assignmentId", verifyToken, async (req, res) => {
+  try {
+    const assignment = await AssignmentModel.findById(req.params.assignmentId).populate("submittedBy yetToBeSubmittedBy");
+    return res.send({
+      error: false,
+      message: "Successfully fetch the assignment details",
+      payload: {
+        assignment,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Couldn't fetch the assignment details",
+    });
+  }
+});
+
+// Delete an assignment
+Router.delete("/:assignmentId", verifyToken, async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+
+    const assignment = await AssignmentModel.findOneAndDelete(assignmentId);
+    return res.send({
+      error: false,
+      message: "Assignment deleted successfully",
+      payload: {
+        assignment,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong while deleting the assignment.",
+    });
+  }
+});
+
+// Update assignment details
+Router.put("/", verifyToken, async (req, res) => {
+  try {
+    const { assignmentId } = req.body;
+    const assignment = await AssignmentModel.findOneAndUpdate(assignmentId, { ...req.body }, { new: true });
+    return res.send({
+      error: false,
+      message: "Assignment updated successfully",
+      payload: {
+        assignment,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong",
     });
   }
 });

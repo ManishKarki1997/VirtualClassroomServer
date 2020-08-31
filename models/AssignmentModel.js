@@ -23,9 +23,20 @@ const AssignmentSchema = mongoose.Schema({
     type: Date,
     required: true,
   },
-  assignments: [],
-  submittedBy: [],
-  yetToBeSubmittedBy: [],
+
+  assignmentFiles: [],
+  submittedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  yetToBeSubmittedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
