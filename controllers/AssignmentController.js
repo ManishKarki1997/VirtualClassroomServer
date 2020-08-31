@@ -19,6 +19,10 @@ const ClassModel = require("../models/ClassModel");
 const UserModel = require("../models/UserModel");
 const { verify } = require("jsonwebtoken");
 
+// -----------------------
+//         Get
+// -----------------------
+
 // Create an assignment
 Router.post("/", verifyToken, async (req, res) => {
   try {
@@ -142,6 +146,50 @@ Router.delete("/:assignmentId", verifyToken, async (req, res) => {
     return res.send({
       error: true,
       message: "Something went wrong while deleting the assignment.",
+    });
+  }
+});
+
+// -----------------------
+//         Post
+// -----------------------
+
+// Submit an assignment
+Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
+  try {
+    const { assignmentId, userId, classId } = req.body;
+    const user = await User.findById(userId);
+    const assignment = await AssignmentModel.findById(assignmentId);
+
+    assignment.assignmentFiles.push(req.file.filename);
+    if (assignment.yetToBeSubmittedBy.indexOf(userId) > -1) {
+      assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userId), 1);
+      assignment.submittedBy.push(userId);
+    }
+    const savedAssignment = await assignment.save();
+
+    const notification = new Notification({
+      title: "Assignment Submitted",
+      description: `${user.name} submitted his work for the assignment ${assignment.title}.`,
+      intendedForUser: true,
+      intendedUser: savedAssignment.createdBy,
+      classId: savedAssignment.classId,
+      createdBy: userId,
+    });
+    const savedNotification = await notification.save();
+
+    user.notifications.push(savedNotification._id);
+    await user.save();
+
+    return res.send({
+      error: false,
+      message: "Assignment submitted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong",
     });
   }
 });
