@@ -71,6 +71,12 @@ const UserSchema = mongoose.Schema({
       ref: "Notification",
     },
   ],
+  assignments: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "Assignment",
+    },
+  ],
   passwordResetToken: {
     type: String,
     default: "0",
