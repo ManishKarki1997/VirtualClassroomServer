@@ -23,7 +23,6 @@ const AssignmentSchema = mongoose.Schema({
     type: Date,
     required: true,
   },
-
   submittedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -34,6 +33,18 @@ const AssignmentSchema = mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+  ],
+  approved: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserAssignment",
+    },
+  ],
+  rejected: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserAssignment",
     },
   ],
   createdAt: {

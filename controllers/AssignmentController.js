@@ -70,7 +70,26 @@ Router.get("/user/:userId", verifyToken, async (req, res) => {
 // Get a single assignment
 Router.get("/:assignmentId", verifyToken, async (req, res) => {
   try {
-    const assignment = await AssignmentModel.findById(req.params.assignmentId).populate("submittedBy yetToBeSubmittedBy");
+    const assignment = await AssignmentModel.findById(req.params.assignmentId)
+      .populate({
+        path: "approved",
+        populate: {
+          path: "userId",
+        },
+      })
+      .populate({
+        path: "rejected",
+        populate: {
+          path: "userId",
+        },
+      })
+      .populate({
+        path: "submittedBy",
+        populate: {
+          path: "userId",
+        },
+      })
+      .populate("yetToBeSubmittedBy");
     return res.send({
       error: false,
       message: "Successfully fetch the assignment details",
@@ -79,6 +98,7 @@ Router.get("/:assignmentId", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Couldn't fetch the assignment details",
@@ -217,6 +237,54 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     return res.send({
       error: true,
       message: "Something went wrong",
+    });
+  }
+});
+
+// Approve or Reject student assignment
+Router.post("/decision", verifyToken, async (req, res) => {
+  try {
+    const { assignmentId, userAssignmentId, decision, userId } = req.body;
+    const assignment = await AssignmentModel.findById(assignmentId);
+
+    if (!assignment.createdBy.equals(userId)) {
+      return res.send({
+        error: true,
+        message: "You do not have the permission to perform this action",
+      });
+    }
+
+    if (decision === "APPROVE") {
+      assignment.approved.push(userAssignmentId);
+
+      if (assignment.rejected.indexOf(userAssignmentId) > -1) {
+        assignment.rejected.splice(assignment.rejected.indexOf(userAssignmentId), 1);
+      }
+
+      if (assignment.yetToBeSubmittedBy.indexOf(userAssignmentId) > -1) {
+        assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userAssignmentId), 1);
+      }
+
+      assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
+    } else if (decision === "REJECT") {
+      assignment.rejected.push(userAssignmentId);
+      assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
+    } else {
+      return res.send({
+        error: true,
+        message: "Invalid decision",
+      });
+    }
+
+    await assignment.save();
+    return res.send({
+      error: false,
+      message: `Assignment successfully ${decision.toLowerCase()}ed`,
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
     });
   }
 });
