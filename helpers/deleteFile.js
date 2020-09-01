@@ -1,20 +1,17 @@
 const fs = require("fs");
-const path = require('path');
+const path = require("path");
 
-const deleteImage = async (fileName, folderName) => {
+const deleteFile = async (fileName, folderName) => {
+  const imagePath = path.join(process.cwd(), `uploads/${folderName}`, fileName);
+  try {
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-    const imagePath = path.join(process.cwd(), `uploads/${folderName}`, fileName)
-    try {
-        fs.unlink(imagePath, err => {
-            if (err) {
-                console.log(err)
-            }
-        })
-
-    } catch (error) {
-        console.log(error)
-    }
-
-}
-
-module.exports = deleteImage;
+module.exports = deleteFile;

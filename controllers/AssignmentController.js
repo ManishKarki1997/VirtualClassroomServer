@@ -8,9 +8,10 @@ const User = require("../models/UserModel");
 const ResourceFolder = require("../models/ResourceFolder");
 const Notification = require("../models/NotificationModel");
 const AssignmentModel = require("../models/AssignmentModel");
+const UserAssignmentModel = require("../models/UserAssignmentModel");
 
 // Helpers
-const deleteImage = require("../helpers/deleteFile");
+const deleteFile = require("../helpers/deleteFile");
 
 // Middlewares
 const assignmentUpload = require("../middlewares/assignmentUpload");
@@ -18,55 +19,11 @@ const verifyToken = require("../middlewares/verifyToken");
 const ClassModel = require("../models/ClassModel");
 const UserModel = require("../models/UserModel");
 const { verify } = require("jsonwebtoken");
+const { assign } = require("nodemailer/lib/shared");
 
 // -----------------------
 //         Get
 // -----------------------
-
-// Create an assignment
-Router.post("/", verifyToken, async (req, res) => {
-  try {
-    const { createdBy, classId } = req.body;
-    const theClass = await ClassModel.findById(classId);
-    const assignment = new AssignmentModel({ ...req.body, yetToBeSubmittedBy: [...theClass.users] });
-    const savedAssignment = await assignment.save();
-    theClass.assignments.push(savedAssignment._id);
-    await theClass.save();
-
-    if (theClass.users.length > 0) {
-      await Promise.all(
-        theClass.users.map(async (classUserId) => {
-          const classUser = await UserModel.findById(classUserId);
-          const notification = new Notification({
-            title: "New Assignment",
-            description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
-            createdBy,
-            classId,
-            intendedForUser: true,
-            intendedUser: classUserId,
-          });
-          const savedNotification = await notification.save();
-          classUser.notifications.push(savedNotification._id);
-          classUser.assignments.push(savedAssignment._id);
-          await classUser.save();
-        })
-      );
-
-      return res.send({
-        error: false,
-        message: "Assignment successfully created",
-        payload: {
-          assignment: savedAssignment,
-        },
-      });
-    }
-  } catch (error) {
-    return res.send({
-      error: true,
-      message: "Something went wrong.",
-    });
-  }
-});
 
 // Get all assignments for a class
 Router.get("/class/:classId", verifyToken, async (req, res) => {
@@ -154,14 +111,81 @@ Router.delete("/:assignmentId", verifyToken, async (req, res) => {
 //         Post
 // -----------------------
 
+// Create an assignment
+Router.post("/", verifyToken, async (req, res) => {
+  try {
+    const { createdBy, classId } = req.body;
+    const theClass = await ClassModel.findById(classId);
+    const assignment = new AssignmentModel({ ...req.body, yetToBeSubmittedBy: [...theClass.users] });
+    const savedAssignment = await assignment.save();
+    theClass.assignments.push(savedAssignment._id);
+    await theClass.save();
+
+    if (theClass.users.length > 0) {
+      await Promise.all(
+        theClass.users.map(async (classUserId) => {
+          const classUser = await UserModel.findById(classUserId);
+          const notification = new Notification({
+            title: "New Assignment",
+            description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
+            createdBy,
+            classId,
+            intendedForUser: true,
+            intendedUser: classUserId,
+          });
+          const savedNotification = await notification.save();
+          classUser.notifications.push(savedNotification._id);
+          classUser.assignments.push(savedAssignment._id);
+          await classUser.save();
+        })
+      );
+
+      return res.send({
+        error: false,
+        message: "Assignment successfully created",
+        payload: {
+          assignment: savedAssignment,
+        },
+      });
+    }
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
+    });
+  }
+});
+
 // Submit an assignment
 Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
   try {
-    const { assignmentId, userId, classId } = req.body;
+    const { assignmentId, userId, note } = req.body;
     const user = await User.findById(userId);
     const assignment = await AssignmentModel.findById(assignmentId);
+    const existingUserAssignment = await UserAssignmentModel.findOne({ userId, assignmentId });
 
-    assignment.assignmentFiles.push(req.file.filename);
+    if (existingUserAssignment) {
+      if (req.file) {
+        deleteFile(req.file.filename, "assignments");
+      }
+      return res.send({
+        error: true,
+        message: "You've already submitted your assignment.",
+      });
+    }
+
+    const userAssignment = new UserAssignmentModel({
+      userId,
+      assignmentId,
+      note,
+      classId: assignment.classId,
+      assignmentFileName: req.file.filename,
+    });
+
+    const savedUserAssignment = await userAssignment.save();
+
+    assignment.submittedBy.push(savedUserAssignment._id);
+
     if (assignment.yetToBeSubmittedBy.indexOf(userId) > -1) {
       assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userId), 1);
       assignment.submittedBy.push(userId);
@@ -184,6 +208,9 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     return res.send({
       error: false,
       message: "Assignment submitted successfully",
+      payload: {
+        savedAssignment,
+      },
     });
   } catch (error) {
     console.log(error);
@@ -193,6 +220,10 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     });
   }
 });
+
+// -----------------------
+//         Put
+// -----------------------
 
 // Update assignment details
 Router.put("/", verifyToken, async (req, res) => {
@@ -210,6 +241,49 @@ Router.put("/", verifyToken, async (req, res) => {
     return res.send({
       error: true,
       message: "Something went wrong",
+    });
+  }
+});
+
+// Update assignment file
+Router.put("/submit", verifyToken, assignmentUpload, async (req, res) => {
+  try {
+    const { assignmentId, note, userId, userAssignmentId } = req.body;
+    const assignment = await AssignmentModel.findById(assignmentId);
+    const userAssignment = await UserAssignmentModel.findById(userAssignmentId);
+    const classUser = await User.findById(assignment.createdBy);
+    const user = await UserModel.findById(userId);
+
+    if (req.file) {
+      deleteFile(userAssignment.assignmentFileName, "assignments");
+    }
+
+    userAssignment.note = note || userAssignment.note;
+    userAssignment.assignmentFileName = req.file.filename;
+
+    const savedUserAssignment = await userAssignment.save();
+
+    const notification = new Notification({
+      title: "Assignment Updated",
+      description: `${user.name} updated his submission for the assignment ${assignment.title}.`,
+      intendedForUser: true,
+      intendedUser: savedUserAssignment.userId,
+      classId: savedUserAssignment.classId,
+      createdBy: savedUserAssignment.userId,
+    });
+    const savedNotification = await notification.save();
+    classUser.notifications.push(savedNotification._id);
+    await classUser.save();
+
+    return res.send({
+      error: false,
+      message: "Assignment updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
     });
   }
 });

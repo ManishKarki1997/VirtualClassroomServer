@@ -24,11 +24,10 @@ const AssignmentSchema = mongoose.Schema({
     required: true,
   },
 
-  assignmentFiles: [],
   submittedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "UserAssignment",
     },
   ],
   yetToBeSubmittedBy: [
