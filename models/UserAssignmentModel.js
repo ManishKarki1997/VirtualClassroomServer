@@ -16,6 +16,13 @@ const UserAssignmentSchema = mongoose.Schema({
     ref: "Assignment",
     required: true,
   },
+  isRejected: {
+    type: Boolean,
+    default: false,
+  },
+  rejectionReason: {
+    type: String,
+  },
   submittedAt: {
     type: Date,
     default: Date.now,

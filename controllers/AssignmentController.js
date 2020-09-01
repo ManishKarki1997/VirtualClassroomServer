@@ -34,7 +34,7 @@ Router.get("/class/:classId", verifyToken, async (req, res) => {
       error: false,
       message: `Assignments successfully fetched for the class ${theClass.name}`,
       payload: {
-        class: theClass,
+        assignments: theClass.assignments,
       },
     });
   } catch (error) {
