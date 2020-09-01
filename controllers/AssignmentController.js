@@ -106,6 +106,29 @@ Router.get("/:assignmentId", verifyToken, async (req, res) => {
   }
 });
 
+// Get student submitted assignment file
+Router.get("/submittedAssignment/:assignmentId", verifyToken, async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { email } = req.user;
+    const user = await User.findOne({ email });
+
+    const userAssignment = await UserAssignmentModel.findOne({ assignmentId, userId: user._id });
+    return res.send({
+      error: false,
+      message: "Successfully fetched your submitted assignment",
+      payload: {
+        userAssignment,
+      },
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Something went wrong fetching your submitted assignment.",
+    });
+  }
+});
+
 // Delete an assignment
 Router.delete("/:assignmentId", verifyToken, async (req, res) => {
   try {
@@ -264,11 +287,8 @@ Router.post("/decision", verifyToken, async (req, res) => {
       if (assignment.yetToBeSubmittedBy.indexOf(userAssignmentId) > -1) {
         assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userAssignmentId), 1);
       }
-
-      assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
     } else if (decision === "REJECT") {
       assignment.rejected.push(userAssignmentId);
-      assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
     } else {
       return res.send({
         error: true,
@@ -324,10 +344,10 @@ Router.put("/submit", verifyToken, assignmentUpload, async (req, res) => {
 
     if (req.file) {
       deleteFile(userAssignment.assignmentFileName, "assignments");
+      userAssignment.assignmentFileName = req.file.filename;
     }
 
     userAssignment.note = note || userAssignment.note;
-    userAssignment.assignmentFileName = req.file.filename;
 
     const savedUserAssignment = await userAssignment.save();
 
