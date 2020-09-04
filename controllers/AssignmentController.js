@@ -49,9 +49,13 @@ Router.get("/class/:classId", verifyToken, async (req, res) => {
 Router.get("/user/:userId", verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await UserModel.findById(userId);
 
-    const assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } }).populate("assignment");
+    const sortOption = req.query.sortBy || "dueDate";
+    const user = await UserModel.findById(userId);
+    const assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
+      .populate("assignment classId")
+      .sort({ [sortOption]: 1 });
+
     return res.send({
       error: false,
       message: "Successfully fetch your assignments",
@@ -231,7 +235,6 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
 
     if (assignment.yetToBeSubmittedBy.indexOf(userId) > -1) {
       assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userId), 1);
-      assignment.submittedBy.push(userId);
     }
     const savedAssignment = await assignment.save();
 
@@ -278,7 +281,9 @@ Router.post("/decision", verifyToken, async (req, res) => {
     }
 
     if (decision === "APPROVE") {
-      assignment.approved.push(userAssignmentId);
+      if (assignment.approved.indexOf(userAssignmentId) > -1) {
+        assignment.approved.push(userAssignmentId);
+      }
 
       if (assignment.rejected.indexOf(userAssignmentId) > -1) {
         assignment.rejected.splice(assignment.rejected.indexOf(userAssignmentId), 1);
@@ -286,6 +291,10 @@ Router.post("/decision", verifyToken, async (req, res) => {
 
       if (assignment.yetToBeSubmittedBy.indexOf(userAssignmentId) > -1) {
         assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userAssignmentId), 1);
+      }
+
+      if (assignment.submittedBy.indexOf(userAssignmentId) > -1) {
+        assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
       }
     } else if (decision === "REJECT") {
       assignment.rejected.push(userAssignmentId);
