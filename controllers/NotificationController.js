@@ -9,7 +9,12 @@ const verifyToken = require("../middlewares/verifyToken");
 // get notifications for a user
 Router.get("/:userId", async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).populate("notifications");
+    const user = await User.findById(req.params.userId).populate({
+      path: "notifications",
+      populate: {
+        path: "classId",
+      },
+    });
     const sortedNotifications = user.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.send({
       error: false,

@@ -52,9 +52,18 @@ Router.get("/user/:userId", verifyToken, async (req, res) => {
 
     const sortOption = req.query.sortBy || "dueDate";
     const user = await UserModel.findById(userId);
-    const assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
-      .populate("assignment classId")
-      .sort({ [sortOption]: 1 });
+    let assignments = [];
+    if (sortOption === "notSubmitted") {
+      const tempAssignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
+        .populate("assignment classId")
+        .sort({ createdAt: 1 });
+
+      assignments = tempAssignments.filter((assignment) => assignment.yetToBeSubmittedBy.indexOf(userId) > -1);
+    } else {
+      assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
+        .populate("assignment classId")
+        .sort({ [sortOption]: 1 });
+    }
 
     return res.send({
       error: false,
@@ -240,7 +249,7 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
 
     const notification = new Notification({
       title: "Assignment Submitted",
-      description: `${user.name} submitted his work for the assignment ${assignment.title}.`,
+      description: `${user.name} submitted his work for the assignment <strong>${assignment.title}</strong>.`,
       intendedForUser: true,
       intendedUser: savedAssignment.createdBy,
       classId: savedAssignment.classId,
@@ -291,10 +300,6 @@ Router.post("/decision", verifyToken, async (req, res) => {
 
       if (assignment.yetToBeSubmittedBy.indexOf(userAssignmentId) > -1) {
         assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userAssignmentId), 1);
-      }
-
-      if (assignment.submittedBy.indexOf(userAssignmentId) > -1) {
-        assignment.submittedBy.splice(assignment.submittedBy.indexOf(userAssignmentId), 1);
       }
     } else if (decision === "REJECT") {
       assignment.rejected.push(userAssignmentId);

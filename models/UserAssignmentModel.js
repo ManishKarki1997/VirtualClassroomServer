@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { string } = require("@hapi/joi");
 
 const UserAssignmentSchema = mongoose.Schema({
   userId: {
@@ -30,7 +29,6 @@ const UserAssignmentSchema = mongoose.Schema({
   },
   note: {
     type: String,
-    required: true,
   },
   updatedAt: {
     type: Date,
