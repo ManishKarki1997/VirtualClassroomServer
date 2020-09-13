@@ -182,7 +182,7 @@ Router.post("/", verifyToken, async (req, res) => {
         theClass.users.map(async (classUserId) => {
           const classUser = await UserModel.findById(classUserId);
           const notification = new Notification({
-            title: "New Assignment",
+            title: `New Assignment for the class <strong>${theClass.name}</strong>`,
             description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
             createdBy,
             classId,
@@ -248,7 +248,7 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     const savedAssignment = await assignment.save();
 
     const notification = new Notification({
-      title: "Assignment Submitted",
+      title: `Assignment Submitted for ${assignment.title}`,
       description: `${user.name} submitted his work for the assignment <strong>${assignment.title}</strong>.`,
       intendedForUser: true,
       intendedUser: savedAssignment.createdBy,

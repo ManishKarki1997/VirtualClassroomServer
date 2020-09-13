@@ -51,12 +51,10 @@ Router.get("/allResources", verifyToken, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.user.email });
 
-    const userResourceFolders = await ResourceFolder.find({ isForClass: false, userId: user._id }).populate("resources");
-    const userJoinedClasses = user.joinedClasses;
-    const userCreatedClasses = user.createdClasses;
+    if (user.userType === "TEACHER") {
+      let resourceFolders = [];
+      const userCreatedClasses = user.createdClasses;
 
-    let allResourcesFolders = [];
-    if (userCreatedClasses.length > 0) {
       await Promise.all(
         userCreatedClasses.map(async (userClass) => {
           const classResourceFolders = await ResourceFolder.findOne({ classId: userClass, isForClass: true, userId: user._id }).populate({
@@ -69,7 +67,7 @@ Router.get("/allResources", verifyToken, async (req, res) => {
             },
           });
           if (!classResourceFolders) return;
-          allResourcesFolders.push({
+          resourceFolders.push({
             className: classResourceFolders.classId.name,
             classBackgroundImage: classResourceFolders.classId.backgroundImage,
             classDescription: classResourceFolders.classId.description,
@@ -78,7 +76,16 @@ Router.get("/allResources", verifyToken, async (req, res) => {
           });
         })
       );
+      return res.send({
+        error: false,
+        resourceFolders,
+      });
     }
+
+    const userJoinedClasses = user.joinedClasses;
+    const allResourcesFolders = [];
+    const userResourceFolders = await ResourceFolder.find({ isForClass: false, userId: user._id }).populate("resources");
+
     if (userJoinedClasses.length > 0) {
       await Promise.all(
         userJoinedClasses.map(async (userClass) => {
@@ -110,6 +117,7 @@ Router.get("/allResources", verifyToken, async (req, res) => {
       resourceFolders: allResourcesFolders,
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while fetching class resources",

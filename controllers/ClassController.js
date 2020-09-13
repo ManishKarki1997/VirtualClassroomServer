@@ -24,7 +24,8 @@ Router.get("/", verifyToken, async (req, res) => {
     let classes;
     const { email } = req.user;
     const user = await User.findOne({ email });
-    if (user.userType === "ADMIN") {
+
+    if (user.userType !== undefined && user.userType === "ADMIN") {
       classes = await Class.find({}).populate("createdBy");
     } else {
       classes = await Class.find({ private: false }).populate("createdBy");
@@ -34,6 +35,7 @@ Router.get("/", verifyToken, async (req, res) => {
       payload: { classes },
     });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong",
@@ -154,44 +156,19 @@ Router.post("/join", verifyToken, async (req, res) => {
   const { userId, classId } = req.body;
 
   try {
-    // fetch the user details
-    const user = await User.findById(userId);
-
     const classToJoin = await Class.findById(classId);
     if (classToJoin.pendingJoinRequests.indexOf(userId) > -1) {
       return res.send({
         error: true,
         message: "Please wait until the class teacher accepts your request.",
       });
-    }
-
-    // if the user has already joined the class, leave the class
-    if (user.joinedClasses.indexOf(classId) > -1) {
-      return res.send({
-        error: true,
-        message: "You're already enrolled in the class.",
-      });
     } else {
-      // push the user id to the class' pendingJoinRequests array
-      // classToJoin.users.push(userId); //delete it after making routes for teacher to accept or reject join requests
-      if (classToJoin.pendingJoinRequests.indexOf(userId) == -1) {
-        classToJoin.pendingJoinRequests.push(userId);
-        await classToJoin.save();
-        await user.save();
-
-        return res.send({
-          error: false,
-          message: "Request sent. You'll join the class when the class teacher accepts the request.",
-        });
-      } else {
-        await classToJoin.save();
-        await user.save();
-
-        return res.send({
-          error: false,
-          message: "Please wait until the class teacher accepts your request.",
-        });
-      }
+      classToJoin.pendingJoinRequests.push(userId);
+      await classToJoin.save();
+      return res.send({
+        error: false,
+        message: "Class join request sent. Please wait until the teacher accepts the request.",
+      });
     }
   } catch (error) {
     console.log(error);
@@ -211,6 +188,7 @@ Router.post("/leave", verifyToken, async (req, res) => {
     const user = await User.findById(userId);
 
     const classToJoin = await Class.findById(classId);
+    const classTeacher = await User.findById(classToJoin.createdBy);
 
     // if the user has already joined the class, leave the class
     if (user.joinedClasses.indexOf(classId) > -1) {
@@ -228,6 +206,8 @@ Router.post("/leave", verifyToken, async (req, res) => {
       });
 
       const savedNotification = await notification.save();
+      classTeacher.notifications.push(savedNotification._id);
+      await classTeacher.save();
 
       await user.save();
       await classToJoin.save();

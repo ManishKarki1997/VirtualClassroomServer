@@ -5,7 +5,7 @@ const Class = require("../models/ClassModel");
 function chatSocket(io) {
   io.on("connection", (socket) => {
     socket.on("JOIN_CLASS_CHAT", (data) => {
-      console.log("joined the class ", data.classId);
+      // console.log("joined the class ", data.classId);
     });
 
     socket.on("SEND_NEW_MESSAGE", async (data) => {
