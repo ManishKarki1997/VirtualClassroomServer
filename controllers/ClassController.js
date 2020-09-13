@@ -470,4 +470,32 @@ Router.get("/upcoming", verifyToken, async (req, res) => {
   }
 });
 
+// User(student)'s joined classes in detail
+Router.get("/detailed/:userId", verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    const userClasses = [];
+    await Promise.all(
+      user.joinedClasses.map(async (userClassId) => {
+        const userClass = await Class.findById(userClassId);
+        userClasses.push(userClass);
+      })
+    );
+    return res.send({
+      error: false,
+      message: "Successfully fetched classes",
+      payload: {
+        userClasses,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong",
+    });
+  }
+});
+
 module.exports = Router;
