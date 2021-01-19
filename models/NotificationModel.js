@@ -12,6 +12,10 @@ const NotificationSchema = mongoose.Schema({
   image: {
     type: String,
   },
+  type: {
+    type: String,
+    default: "Notification",
+  },
   imagePurposeType: {
     type: String,
   },

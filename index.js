@@ -5,7 +5,8 @@ const bodyParser = require("body-parser");
 const socket = require("socket.io");
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/virtualclassroom";
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://localhost:27017/virtualclassroom";
 
 // import sockets
 const { sockets } = require("./sockets/socket");

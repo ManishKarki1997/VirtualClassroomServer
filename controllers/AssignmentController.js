@@ -54,13 +54,19 @@ Router.get("/user/:userId", verifyToken, async (req, res) => {
     const user = await UserModel.findById(userId);
     let assignments = [];
     if (sortOption === "notSubmitted") {
-      const tempAssignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
+      const tempAssignments = await AssignmentModel.find({
+        classId: { $in: user.joinedClasses },
+      })
         .populate("assignment classId")
         .sort({ createdAt: 1 });
 
-      assignments = tempAssignments.filter((assignment) => assignment.yetToBeSubmittedBy.indexOf(userId) > -1);
+      assignments = tempAssignments.filter(
+        (assignment) => assignment.yetToBeSubmittedBy.indexOf(userId) > -1
+      );
     } else {
-      assignments = await AssignmentModel.find({ classId: { $in: user.joinedClasses } })
+      assignments = await AssignmentModel.find({
+        classId: { $in: user.joinedClasses },
+      })
         .populate("assignment classId")
         .sort({ [sortOption]: 1 });
     }
@@ -120,27 +126,34 @@ Router.get("/:assignmentId", verifyToken, async (req, res) => {
 });
 
 // Get student submitted assignment file
-Router.get("/submittedAssignment/:assignmentId", verifyToken, async (req, res) => {
-  try {
-    const { assignmentId } = req.params;
-    const { email } = req.user;
-    const user = await User.findOne({ email });
+Router.get(
+  "/submittedAssignment/:assignmentId",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const { assignmentId } = req.params;
+      const { email } = req.user;
+      const user = await User.findOne({ email });
 
-    const userAssignment = await UserAssignmentModel.findOne({ assignmentId, userId: user._id });
-    return res.send({
-      error: false,
-      message: "Successfully fetched your submitted assignment",
-      payload: {
-        userAssignment,
-      },
-    });
-  } catch (error) {
-    return res.send({
-      error: true,
-      message: "Something went wrong fetching your submitted assignment.",
-    });
+      const userAssignment = await UserAssignmentModel.findOne({
+        assignmentId,
+        userId: user._id,
+      });
+      return res.send({
+        error: false,
+        message: "Successfully fetched your submitted assignment",
+        payload: {
+          userAssignment,
+        },
+      });
+    } catch (error) {
+      return res.send({
+        error: true,
+        message: "Something went wrong fetching your submitted assignment.",
+      });
+    }
   }
-});
+);
 
 // Delete an assignment
 Router.delete("/:assignmentId", verifyToken, async (req, res) => {
@@ -172,7 +185,10 @@ Router.post("/", verifyToken, async (req, res) => {
   try {
     const { createdBy, classId } = req.body;
     const theClass = await ClassModel.findById(classId);
-    const assignment = new AssignmentModel({ ...req.body, yetToBeSubmittedBy: [...theClass.users] });
+    const assignment = new AssignmentModel({
+      ...req.body,
+      yetToBeSubmittedBy: [...theClass.users],
+    });
     const savedAssignment = await assignment.save();
     theClass.assignments.push(savedAssignment._id);
     await theClass.save();
@@ -182,6 +198,7 @@ Router.post("/", verifyToken, async (req, res) => {
         theClass.users.map(async (classUserId) => {
           const classUser = await UserModel.findById(classUserId);
           const notification = new Notification({
+            type: "Assignment",
             title: `New Assignment for the class <strong>${theClass.name}</strong>`,
             description: `You have a new assignment for the class <strong>${theClass.name}</strong>`,
             createdBy,
@@ -218,7 +235,10 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     const { assignmentId, userId, note } = req.body;
     const user = await User.findById(userId);
     const assignment = await AssignmentModel.findById(assignmentId);
-    const existingUserAssignment = await UserAssignmentModel.findOne({ userId, assignmentId });
+    const existingUserAssignment = await UserAssignmentModel.findOne({
+      userId,
+      assignmentId,
+    });
 
     if (existingUserAssignment) {
       if (req.file) {
@@ -243,11 +263,15 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     assignment.submittedBy.push(savedUserAssignment._id);
 
     if (assignment.yetToBeSubmittedBy.indexOf(userId) > -1) {
-      assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userId), 1);
+      assignment.yetToBeSubmittedBy.splice(
+        assignment.yetToBeSubmittedBy.indexOf(userId),
+        1
+      );
     }
     const savedAssignment = await assignment.save();
 
     const notification = new Notification({
+      type: "Assignment",
       title: `Assignment Submitted for ${assignment.title}`,
       description: `${user.name} submitted his work for the assignment <strong>${assignment.title}</strong>.`,
       intendedForUser: true,
@@ -295,11 +319,17 @@ Router.post("/decision", verifyToken, async (req, res) => {
       }
 
       if (assignment.rejected.indexOf(userAssignmentId) > -1) {
-        assignment.rejected.splice(assignment.rejected.indexOf(userAssignmentId), 1);
+        assignment.rejected.splice(
+          assignment.rejected.indexOf(userAssignmentId),
+          1
+        );
       }
 
       if (assignment.yetToBeSubmittedBy.indexOf(userAssignmentId) > -1) {
-        assignment.yetToBeSubmittedBy.splice(assignment.yetToBeSubmittedBy.indexOf(userAssignmentId), 1);
+        assignment.yetToBeSubmittedBy.splice(
+          assignment.yetToBeSubmittedBy.indexOf(userAssignmentId),
+          1
+        );
       }
     } else if (decision === "REJECT") {
       assignment.rejected.push(userAssignmentId);
@@ -331,7 +361,11 @@ Router.post("/decision", verifyToken, async (req, res) => {
 Router.put("/", verifyToken, async (req, res) => {
   try {
     const { assignmentId } = req.body;
-    const assignment = await AssignmentModel.findOneAndUpdate(assignmentId, { ...req.body }, { new: true });
+    const assignment = await AssignmentModel.findOneAndUpdate(
+      assignmentId,
+      { ...req.body },
+      { new: true }
+    );
     return res.send({
       error: false,
       message: "Assignment updated successfully",
@@ -366,6 +400,7 @@ Router.put("/submit", verifyToken, assignmentUpload, async (req, res) => {
     const savedUserAssignment = await userAssignment.save();
 
     const notification = new Notification({
+      type: "Assignment",
       title: "Assignment Updated",
       description: `${user.name} updated his submission for the assignment ${assignment.title}.`,
       intendedForUser: true,

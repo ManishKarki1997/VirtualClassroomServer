@@ -15,7 +15,9 @@ Router.get("/:userId", async (req, res) => {
         path: "classId",
       },
     });
-    const sortedNotifications = user.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const sortedNotifications = user.notifications.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
     return res.send({
       error: false,
       payload: sortedNotifications,
@@ -31,9 +33,10 @@ Router.get("/:userId", async (req, res) => {
 
 // create a notification
 Router.post("/", async (req, res) => {
-  const { title, content, createdBy, classId } = req.body;
+  const { title, content, createdBy, classId, type } = req.body;
   try {
     const notification = new Notification({
+      type,
       title,
       content,
       classId,

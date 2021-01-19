@@ -8,6 +8,7 @@ const userSchema = Joi.object({
   password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{8,30}$")),
 
   avatar: Joi.string(),
+  userType: Joi.string(),
 
   name: Joi.string().min(3).max(36),
 

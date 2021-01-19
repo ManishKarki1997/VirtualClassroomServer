@@ -57,7 +57,11 @@ Router.get("/allResources", verifyToken, async (req, res) => {
 
       await Promise.all(
         userCreatedClasses.map(async (userClass) => {
-          const classResourceFolders = await ResourceFolder.findOne({ classId: userClass, isForClass: true, userId: user._id }).populate({
+          const classResourceFolders = await ResourceFolder.findOne({
+            classId: userClass,
+            isForClass: true,
+            userId: user._id,
+          }).populate({
             path: "resources classId",
             populate: {
               path: "resourceFolders",
@@ -84,12 +88,18 @@ Router.get("/allResources", verifyToken, async (req, res) => {
 
     const userJoinedClasses = user.joinedClasses;
     const allResourcesFolders = [];
-    const userResourceFolders = await ResourceFolder.find({ isForClass: false, userId: user._id }).populate("resources");
+    const userResourceFolders = await ResourceFolder.find({
+      isForClass: false,
+      userId: user._id,
+    }).populate("resources");
 
     if (userJoinedClasses.length > 0) {
       await Promise.all(
         userJoinedClasses.map(async (userClass) => {
-          const classResourceFolders = await ResourceFolder.findOne({ classId: userClass, isForClass: true }).populate({
+          const classResourceFolders = await ResourceFolder.findOne({
+            classId: userClass,
+            isForClass: true,
+          }).populate({
             path: "resources classId",
             populate: {
               path: "resourceFolders",
@@ -131,7 +141,9 @@ Router.get("/allResources", verifyToken, async (req, res) => {
 // Get all resource folders of a class for a user
 Router.get("/allResourceFolders/:classId", verifyToken, async (req, res) => {
   try {
-    const userClass = await Class.findById(req.params.classId).populate("resourceFolders");
+    const userClass = await Class.findById(req.params.classId).populate(
+      "resourceFolders"
+    );
 
     return res.send({
       error: false,
@@ -156,7 +168,9 @@ Router.get("/single/:folderId", verifyToken, async (req, res) => {
   try {
     const { email } = req.user;
     const user = await User.findOne({ email });
-    const folder = await ResourceFolder.findById(req.params.folderId).populate("resources");
+    const folder = await ResourceFolder.findById(req.params.folderId).populate(
+      "resources"
+    );
 
     return res.send({
       error: false,
@@ -201,7 +215,10 @@ Router.post("/", verifyToken, async (req, res) => {
         },
       });
     } else {
-      const existingFoldernameByUser = await ResourceFolder.findOne({ userId, folderName });
+      const existingFoldernameByUser = await ResourceFolder.findOne({
+        userId,
+        folderName,
+      });
       if (existingFoldernameByUser) {
         return res.send({
           error: true,
@@ -283,6 +300,7 @@ Router.put("/rename", verifyToken, async (req, res) => {
 Router.delete("/:folderId", verifyToken, async (req, res) => {
   try {
     const folder = await ResourceFolder.findById(req.params.folderId);
+
     const { email } = req.user;
     const user = await User.findOne({ email });
 
@@ -290,9 +308,14 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
       return res.send({
         error: true,
         message: "Something went wrong while deleting the folder",
-        payload: {
-          error,
-        },
+        payload: {},
+      });
+    }
+
+    if (folder.folderName === "Uncategorized") {
+      return res.send({
+        error: true,
+        message: "You cannot delete the default folder.",
       });
     }
 
@@ -305,19 +328,26 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
         },
       });
     }
-
     if (folder.isForClass) {
       const theClass = await Class.findById(folder.classId);
-      theClass.resourceFolders = theClass.resourceFolders.filter((f) => !f.equals(folder._id));
+      theClass.resourceFolders = theClass.resourceFolders.filter(
+        (f) => !f.equals(folder._id)
+      );
       await theClass.save();
       return res.send({
         error: false,
         message: "Folder deleted successfully",
       });
     } else {
-      user.resourceFolders = user.resourceFolders.filter((rFolder) => rFolder !== req.params.folderId);
+      user.resourceFolders = user.resourceFolders.filter(
+        (rFolder) => !rFolder.equals(req.params.folderId)
+      );
+
       await user.save();
-      const deletedFolder = await ResourceFolder.findOneAndDelete(req.params.folderId);
+      const deletedFolder = await ResourceFolder.deleteOne({
+        _id: req.params.folderId,
+      });
+
       return res.send({
         error: false,
         message: "Folder deleted successfully",
@@ -327,6 +357,7 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong while deleting the folder",
@@ -338,96 +369,118 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
 });
 
 // Add new resource to folder
-Router.post("/addNewResource", verifyToken, resourceUpload, async (req, res) => {
-  const { name, description, createdBy, classId, folderId, userId } = req.body;
-  const { email } = req.user;
-  console.log(req.body);
-
-  try {
-    const theClass = await Class.findById(classId);
-    // const user = await User.findOne({ email });
-    const user = await User.findById(userId);
-    const resourceFolder = await ResourceFolder.findById(folderId).populate("classId");
-
-    const pathToResourceFile = path.resolve(process.cwd(), "uploads", "resources", req.file.filename);
-    if (fs.existsSync(pathToResourceFile)) {
-      const stats = fs.statSync(pathToResourceFile);
-      req.fileSize = stats["size"];
-    }
-
-    // create a new resource
-    const resource = new Resource({
+Router.post(
+  "/addNewResource",
+  verifyToken,
+  resourceUpload,
+  async (req, res) => {
+    const {
       name,
       description,
-      classId,
       createdBy,
-      resourceUrl: req.file.filename,
-      fileType: req.resourceFileType,
-      fileSize: req.fileSize,
-    });
+      classId,
+      folderId,
+      userId,
+    } = req.body;
+    const { email } = req.user;
+    console.log(req.body);
 
-    // save the resource to the database
-    const result = await resource.save();
+    try {
+      const theClass = await Class.findById(classId);
+      // const user = await User.findOne({ email });
+      const user = await User.findById(userId);
+      const resourceFolder = await ResourceFolder.findById(folderId).populate(
+        "classId"
+      );
 
-    resourceFolder.resources.push(result._id);
-    await resourceFolder.save();
+      const pathToResourceFile = path.resolve(
+        process.cwd(),
+        "uploads",
+        "resources",
+        req.file.filename
+      );
+      if (fs.existsSync(pathToResourceFile)) {
+        const stats = fs.statSync(pathToResourceFile);
+        req.fileSize = stats["size"];
+      }
 
-    // push the resource reference to the class' resources array
-    theClass.resources.push(result._id);
-    const notification = new Notification({
-      title: `${user.name} has added a new resource file for the class <strong>${resourceFolder.classId.name}</strong>.`,
-      createdBy: user._id,
-      classId: resourceFolder.classId._id,
-      resourceUrl: req.file.filename,
-      image: resourceFolder.classId.backgroundImage,
-      imagePurposeType: "ResourceAdded",
-      imageTargetUrl: resourceFolder.classId._id,
-    });
+      // create a new resource
+      const resource = new Resource({
+        name,
+        description,
+        classId,
+        createdBy,
+        resourceUrl: req.file.filename,
+        fileType: req.resourceFileType,
+        fileSize: req.fileSize,
+      });
 
-    const savedNotification = await notification.save();
+      // save the resource to the database
+      const result = await resource.save();
 
-    const classUsers = resourceFolder.classId.users;
-    await Promise.all(
-      classUsers.map((userId) => {
-        User.findById(userId).then((user) => {
-          user.notifications.push(savedNotification._id);
-          return user.save();
-        });
-      })
-    );
+      resourceFolder.resources.push(result._id);
+      await resourceFolder.save();
 
-    // save the class
-    await theClass.save();
+      // push the resource reference to the class' resources array
+      theClass.resources.push(result._id);
+      const notification = new Notification({
+        type: "Resource",
+        title: `${user.name} has added a new resource file for the class <strong>${resourceFolder.classId.name}</strong>.`,
+        createdBy: user._id,
+        classId: resourceFolder.classId._id,
+        resourceUrl: req.file.filename,
+        image: resourceFolder.classId.backgroundImage,
+        imagePurposeType: "ResourceAdded",
+        imageTargetUrl: resourceFolder.classId._id,
+      });
 
-    // setNotificationRecipients(theClass.users);
+      const savedNotification = await notification.save();
 
-    return res.send({
-      error: false,
-      payload: {
-        result,
-        message: "Resource successfully added.",
-      },
-    });
-  } catch (error) {
-    console.log(error);
+      const classUsers = resourceFolder.classId.users;
+      await Promise.all(
+        classUsers.map((userId) => {
+          User.findById(userId).then((user) => {
+            user.notifications.push(savedNotification._id);
+            return user.save();
+          });
+        })
+      );
 
-    // if something goes wrong, delete the uploaded file
-    if (error) {
-      deleteFile(req.file.filename, "resources");
+      // save the class
+      await theClass.save();
+
+      // setNotificationRecipients(theClass.users);
+
+      return res.send({
+        error: false,
+        payload: {
+          result,
+          message: "Resource successfully added.",
+        },
+      });
+    } catch (error) {
+      console.log(error);
+
+      // if something goes wrong, delete the uploaded file
+      if (error) {
+        deleteFile(req.file.filename, "resources");
+      }
+      return res.send({
+        error: true,
+        message: error,
+      });
     }
-    return res.send({
-      error: true,
-      message: error,
-    });
   }
-});
+);
 
 // bookmark resource to folder
 Router.post("/addResource", verifyToken, async (req, res) => {
   try {
     const { userId, folderId, resourceId } = req.body;
 
-    const resourceFolder = await ResourceFolder.findById(folderId).populate("classId");
+    const resourceFolder = await ResourceFolder.findById(folderId).populate(
+      "classId"
+    );
     // if (!resourceFolder.userId.equals(userId)) {
     //   return res.send({
     //     error: true,
@@ -435,7 +488,9 @@ Router.post("/addResource", verifyToken, async (req, res) => {
     //   });
     // }
 
-    const alreadyExists = resourceFolder.resources.filter((r) => r.equals(resourceId));
+    const alreadyExists = resourceFolder.resources.filter((r) =>
+      r.equals(resourceId)
+    );
     if (alreadyExists.length > 0) {
       return res.send({
         error: true,
@@ -476,7 +531,13 @@ Router.post("/copyFolder", verifyToken, async (req, res) => {
         message: "You already have this folder in your collection",
       });
     } else {
-      const folderCopy = { ...folder, folderName: folder.classId.name, resources: folder.resources, userId: user._id, isForClass: false };
+      const folderCopy = {
+        // classId: folder.classId._id,
+        folderName: folder.classId.name + " - " + folder.folderName,
+        resources: folder.resources,
+        userId: user._id,
+        isForClass: false,
+      };
       const newFolder = new ResourceFolder({ ...folderCopy });
       const savedFolder = await newFolder.save();
       user.resourceFolders.push(savedFolder._id);
@@ -491,7 +552,8 @@ Router.post("/copyFolder", verifyToken, async (req, res) => {
     console.log(error);
     return res.send({
       error: true,
-      message: "Something went wrong while copying the folder to your collection",
+      message:
+        "Something went wrong while copying the folder to your collection",
     });
   }
 });
@@ -523,7 +585,8 @@ Router.post("/deleteResource", verifyToken, async (req, res) => {
   } catch (error) {
     return res.send({
       error: true,
-      message: "Something went wrong while deleting the resource from the folder",
+      message:
+        "Something went wrong while deleting the resource from the folder",
       payload: {
         error,
       },

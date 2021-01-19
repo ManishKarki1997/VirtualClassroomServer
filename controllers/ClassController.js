@@ -45,7 +45,15 @@ Router.get("/", verifyToken, async (req, res) => {
 
 // Create a new class
 Router.post("/", verifyToken, imageUpload, async (req, res) => {
-  const { name, shortInfo, description, startTime, endTime, createdBy, private } = req.body;
+  const {
+    name,
+    shortInfo,
+    description,
+    startTime,
+    endTime,
+    createdBy,
+    private,
+  } = req.body;
 
   try {
     // Validate class details
@@ -110,7 +118,9 @@ Router.post("/", verifyToken, imageUpload, async (req, res) => {
 
     const savedResourceFolder = await resourceFolder.save();
 
-    const classWithUserDetails = await Class.findById(result._id).populate("createdBy");
+    const classWithUserDetails = await Class.findById(result._id).populate(
+      "createdBy"
+    );
     classWithUserDetails.resourceFolders.push(savedResourceFolder._id);
     await classWithUserDetails.save();
 
@@ -167,7 +177,8 @@ Router.post("/join", verifyToken, async (req, res) => {
       await classToJoin.save();
       return res.send({
         error: false,
-        message: "Class join request sent. Please wait until the teacher accepts the request.",
+        message:
+          "Class join request sent. Please wait until the teacher accepts the request.",
       });
     }
   } catch (error) {
@@ -281,7 +292,9 @@ Router.put("/", verifyToken, imageUpload, async (req, res) => {
 
   try {
     // Update the class
-    let newClass = await Class.findOneAndUpdate({ _id: classId }, req.body, { new: true });
+    let newClass = await Class.findOneAndUpdate({ _id: classId }, req.body, {
+      new: true,
+    });
 
     // if the user changed the class background image,
     if (req.file) {
@@ -360,7 +373,9 @@ Router.get("/pendingrequests/:classId", verifyToken, async (req, res) => {
   const { classId } = req.params;
 
   try {
-    const theClass = await Class.findById(classId).populate("pendingJoinRequests");
+    const theClass = await Class.findById(classId).populate(
+      "pendingJoinRequests"
+    );
     return res.send({
       error: false,
       payload: { pendingJoinRequests: theClass.pendingJoinRequests },
@@ -382,7 +397,10 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
 
     // the join request is denied if the decision equals 'accept'
     if (decision === "reject") {
-      classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
+      classToJoin.pendingJoinRequests.splice(
+        classToJoin.pendingJoinRequests.indexOf(userId),
+        1
+      );
       await classToJoin.save();
 
       const notification = new Notification({
@@ -411,7 +429,10 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
       // add the userId to the class users array
       const user = await User.findById(userId);
       user.joinedClasses.push(classId);
-      classToJoin.pendingJoinRequests.splice(classToJoin.pendingJoinRequests.indexOf(userId), 1);
+      classToJoin.pendingJoinRequests.splice(
+        classToJoin.pendingJoinRequests.indexOf(userId),
+        1
+      );
       classToJoin.users.push(userId);
 
       const notification = new Notification({
