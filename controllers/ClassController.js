@@ -469,14 +469,19 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
 Router.get("/upcoming", verifyToken, async (req, res) => {
   try {
     const { email } = req.user;
-    const user = await User.findOne({ email }).populate("joinedClasses");
-    const userClasses = user.joinedClasses;
+    const user = await User.findOne({ email }).populate(
+      "joinedClasses createdClasses"
+    );
+    const { joinedClasses, createdClasses } = user;
 
     return res.send({
       error: false,
       message: "Successfully fetched upcoming classes",
       payload: {
-        upcomingClasses: userClasses,
+        upcomingClasses: {
+          joinedClasses,
+          createdClasses,
+        },
       },
     });
   } catch (error) {

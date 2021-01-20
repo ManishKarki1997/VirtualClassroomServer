@@ -391,7 +391,7 @@ Router.put("/submit", verifyToken, assignmentUpload, async (req, res) => {
     const { assignmentId, note, userId, userAssignmentId } = req.body;
     const assignment = await AssignmentModel.findById(assignmentId);
     const userAssignment = await UserAssignmentModel.findById(userAssignmentId);
-    const classUser = await User.findById(assignment.createdBy);
+    const teacher = await User.findById(assignment.createdBy);
     const user = await UserModel.findById(userId);
 
     if (req.file) {
@@ -413,8 +413,8 @@ Router.put("/submit", verifyToken, assignmentUpload, async (req, res) => {
       createdBy: savedUserAssignment.userId,
     });
     const savedNotification = await notification.save();
-    classUser.notifications.push(savedNotification._id);
-    await classUser.save();
+    teacher.notifications.push(savedNotification._id);
+    await teacher.save();
 
     return res.send({
       error: false,
