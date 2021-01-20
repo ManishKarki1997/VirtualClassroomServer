@@ -29,7 +29,9 @@ const { assign } = require("nodemailer/lib/shared");
 Router.get("/class/:classId", verifyToken, async (req, res) => {
   try {
     const { classId } = req.params;
-    const theClass = await ClassModel.findById(classId).populate("assignments");
+    const theClass = await ClassModel.findById(classId)
+      .sort({ createdAt: 1 })
+      .populate("assignments");
     return res.send({
       error: false,
       message: `Assignments successfully fetched for the class ${theClass.name}`,
@@ -222,6 +224,7 @@ Router.post("/", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: "Something went wrong.",
@@ -281,8 +284,9 @@ Router.post("/submit", verifyToken, assignmentUpload, async (req, res) => {
     });
     const savedNotification = await notification.save();
 
-    user.notifications.push(savedNotification._id);
-    await user.save();
+    const teacher = await User.findById(savedAssignment.createdBy);
+    teacher.notifications.push(savedNotification._id);
+    await teacher.save();
 
     return res.send({
       error: false,

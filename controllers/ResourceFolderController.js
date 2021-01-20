@@ -337,6 +337,9 @@ Router.delete("/:folderId", verifyToken, async (req, res) => {
       return res.send({
         error: false,
         message: "Folder deleted successfully",
+        payload: {
+          deletedFolder: folder,
+        },
       });
     } else {
       user.resourceFolders = user.resourceFolders.filter(
