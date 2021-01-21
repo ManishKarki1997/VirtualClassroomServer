@@ -74,7 +74,6 @@ Router.post("/", imageUpload, async (req, res) => {
       contact,
       avatar: req.file.filename,
       password: hashedPassword,
-      accountConfirmationHash,
     });
 
     const result = await user.save();
@@ -106,7 +105,7 @@ Router.post("/", imageUpload, async (req, res) => {
       subject: "Verify your account",
       html: `
         <h1>Verify your account</h1>
-        <p>Please click <a href='https://localhost:8080/accountconfirmation/${accountConfirmationHash}'>here</a> to verify your account.</p>
+        <p>Please click <a href='https://localhost:8080/accountconfirmation?token=${accountConfirmationHash}'>here</a> to verify your account.</p>
       `,
     };
 
@@ -119,7 +118,8 @@ Router.post("/", imageUpload, async (req, res) => {
       } else {
         return res.send({
           error: false,
-          message: "Please check your email and verify your account.",
+          message:
+            "Registered Successfully. Please check your email and verify your account.",
         });
       }
     });
@@ -147,6 +147,13 @@ Router.post("/login", async (req, res) => {
   try {
     // fetch user from the database with that email
     const user = await User.findOne({ email });
+
+    if (!user.isActive) {
+      return res.send({
+        error: true,
+        message: "Please check your email and activate your account.",
+      });
+    }
 
     // compare passwords
     const passwordMatches = await bcrypt.compare(password, user.password);
@@ -183,11 +190,26 @@ Router.post("/login", async (req, res) => {
 Router.post("/confirmaccount", async (req, res) => {
   const { accountConfirmationHash } = req.body;
 
-  const email = await JWToken.verify(
-    accountConfirmationHash,
-    process.env.JWT_SECRET_KEY
-  );
-  console.log(email);
+  try {
+    const { email } = await JWToken.verify(
+      accountConfirmationHash,
+      process.env.JWT_SECRET_KEY
+    );
+
+    const user = await User.findOne({ email });
+    user.isActive = true;
+
+    await user.save();
+    return res.send({
+      error: false,
+      message: "Account Verified. You can proceed to login now.",
+    });
+  } catch (error) {
+    return res.send({
+      error: true,
+      message: "Invalid token. Please double check your email.",
+    });
+  }
 });
 
 // get user details
