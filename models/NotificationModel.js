@@ -51,6 +51,9 @@ const NotificationSchema = mongoose.Schema({
       ref: "User",
     },
   ],
+  extraInfo: {
+    type: Object,
+  },
   createdAt: {
     type: Date,
     default: Date.now(),

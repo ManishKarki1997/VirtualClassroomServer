@@ -17,6 +17,7 @@ const ClassValidator = require("../validators/ClassValidator");
 // Middlewares
 const imageUpload = require("../middlewares/imageUpload");
 const verifyToken = require("../middlewares/verifyToken");
+const { verify } = require("jsonwebtoken");
 
 // Fetch all classes
 Router.get("/", verifyToken, async (req, res) => {
@@ -141,6 +142,7 @@ Router.post("/", verifyToken, imageUpload, async (req, res) => {
   }
 });
 
+// get all students details in a classroom
 Router.get("/:classId/students", verifyToken, async (req, res) => {
   try {
     const { classId } = req.params;
@@ -157,6 +159,28 @@ Router.get("/:classId/students", verifyToken, async (req, res) => {
       error: true,
       message: "Something went wrong retrieving the classroom students",
       payload: error,
+    });
+  }
+});
+
+// Get a single class details
+Router.get("/:classId", verifyToken, async (req, res) => {
+  const { classId } = req.params;
+
+  try {
+    const classroom = await Class.findById(classId).populate("createdBy");
+
+    return res.send({
+      error: false,
+      payload: {
+        class: classroom,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      error: true,
+      message: "Something went wrong.",
     });
   }
 });
@@ -240,7 +264,7 @@ Router.post("/leave", verifyToken, async (req, res) => {
 // Kickout a student
 // User leaves the class
 Router.post("/kickout", verifyToken, async (req, res) => {
-  const { userId, studentId, classId } = req.body;
+  const { userId, studentId, classId, kickoutReason } = req.body;
   try {
     // fetch the user details
     const user = await User.findById(userId);
@@ -257,12 +281,16 @@ Router.post("/kickout", verifyToken, async (req, res) => {
       classToJoin.users.splice(classToJoin.users.indexOf(studentId), 1);
 
       const notification = new Notification({
-        title: `You have been kick out from the class <strong>${classToJoin.name}</strong>`,
+        type: "KICKOUT",
+        title: `You have been kicked out from the class <strong>${classToJoin.name}</strong>`,
         intendedUser: studentId,
         classId,
         image: classToJoin.backgroundImage,
         imageTargetUrl: classToJoin.imageTargetUrl,
         createdBy: userId,
+        extraInfo: {
+          kickoutReason,
+        },
       });
 
       const savedNotification = await notification.save();
@@ -466,12 +494,14 @@ Router.post("/pendingrequests/accept", verifyToken, async (req, res) => {
 });
 
 // find upcoming classes
-Router.get("/upcoming", verifyToken, async (req, res) => {
+Router.get("/upcoming/all", verifyToken, async (req, res) => {
   try {
     const { email } = req.user;
+
     const user = await User.findOne({ email }).populate(
       "joinedClasses createdClasses"
     );
+
     const { joinedClasses, createdClasses } = user;
 
     return res.send({
