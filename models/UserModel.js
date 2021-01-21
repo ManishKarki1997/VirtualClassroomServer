@@ -25,6 +25,13 @@ const UserSchema = mongoose.Schema({
     type: String,
     // required: true,
   },
+  isActive: {
+    type: Boolean,
+    default: false,
+  },
+  accountConfirmationHash: {
+    type: String,
+  },
   passwordResetHash: {
     type: String,
   },

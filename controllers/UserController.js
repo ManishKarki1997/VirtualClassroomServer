@@ -1,10 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const Router = express.Router();
 const bcrypt = require("bcryptjs");
 const JWToken = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-
-require("dotenv").config();
 
 const nodemailer = require("nodemailer");
 
@@ -62,6 +61,11 @@ Router.post("/", imageUpload, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const accountConfirmationHash = await JWToken.sign(
+      { email },
+      process.env.JWT_SECRET_KEY
+    );
+
     // create a new user
     const user = new User({
       userType,
@@ -70,10 +74,8 @@ Router.post("/", imageUpload, async (req, res) => {
       contact,
       avatar: req.file.filename,
       password: hashedPassword,
+      accountConfirmationHash,
     });
-
-    // create and send JW token
-    const jwtToken = JWToken.sign({ email }, process.env.JWT_SECRET_KEY);
 
     const result = await user.save();
 
@@ -90,15 +92,47 @@ Router.post("/", imageUpload, async (req, res) => {
     // don't send password property
     result.password = undefined;
 
-    // return the newly created user as the payload
-    return res.send({
-      error: false,
-      payload: {
-        user: updatedUser,
-        jwtToken,
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_EMAIL,
+        pass: process.env.GMAIL_PASSWORD,
       },
     });
+
+    const mailOptions = {
+      from: "eclassroom@gmail.com",
+      to: req.body.email,
+      subject: "Verify your account",
+      html: `
+        <h1>Verify your account</h1>
+        <p>Please click <a href='https://localhost:8080/accountconfirmation/${accountConfirmationHash}'>here</a> to verify your account.</p>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        return res.send({
+          error: true,
+          message: "Something went wrong",
+        });
+      } else {
+        return res.send({
+          error: false,
+          message: "Please check your email and verify your account.",
+        });
+      }
+    });
+
+    // return the newly created user as the payload
+    // return res.send({
+    //   error: false,
+    //   payload: {
+    //     user: updatedUser,
+    //   },
+    // });
   } catch (error) {
+    console.log(error);
     return res.send({
       error: true,
       message: error,
@@ -143,6 +177,17 @@ Router.post("/login", async (req, res) => {
       message: "No user found with those credentials.",
     });
   }
+});
+
+// Confirm Account
+Router.post("/confirmaccount", async (req, res) => {
+  const { accountConfirmationHash } = req.body;
+
+  const email = await JWToken.verify(
+    accountConfirmationHash,
+    process.env.JWT_SECRET_KEY
+  );
+  console.log(email);
 });
 
 // get user details
