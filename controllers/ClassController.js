@@ -277,6 +277,7 @@ Router.post("/kickout", verifyToken, async (req, res) => {
         message: "You do not have the authority to perform this action.",
       });
     }
+
     if (classToJoin.users.indexOf(studentId) >= 0) {
       classToJoin.users.splice(classToJoin.users.indexOf(studentId), 1);
 
@@ -296,6 +297,10 @@ Router.post("/kickout", verifyToken, async (req, res) => {
       const savedNotification = await notification.save();
 
       const student = await User.findById(studentId);
+      student.joinedClasses.splice(
+        student.joinedClasses.indexOf(classToJoin._id),
+        1
+      );
       student.notifications.push(savedNotification._id);
       await student.save();
 

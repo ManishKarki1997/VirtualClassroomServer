@@ -55,7 +55,9 @@ function sockets(io) {
       }
       // if there is already at least one active users, check if this socket is already present
       else if (allActiveUsers.length > 0) {
-        if (allActiveUsers.find((user) => user.socket === socket.id) == undefined) {
+        if (
+          allActiveUsers.find((user) => user.socket === socket.id) == undefined
+        ) {
           user.socket = socket.id;
           allActiveUsers.push(user);
         }
@@ -88,7 +90,14 @@ function sockets(io) {
     });
 
     socket.on("class_streaming_started", (payload) => {
-      const { classroomName, classroomId, classroomTeacher, classroomImage, startTime, teacherId } = payload;
+      const {
+        classroomName,
+        classroomId,
+        classroomTeacher,
+        classroomImage,
+        startTime,
+        teacherId,
+      } = payload;
       io.emit("class_has_started", { classroomName, classroomId, teacherId });
       socket.join(classroomId);
       emitActiveUsers(classroomId);
@@ -130,7 +139,10 @@ function sockets(io) {
 
     socket.on("get_class_live_stream", ({ classroomId }) => {
       if (liveOnlineClasses[classroomId]) {
-        io.to(classroomId).emit("receive_class_live_stream", liveOnlineClasses[classroomId].stream);
+        io.to(classroomId).emit(
+          "receive_class_live_stream",
+          liveOnlineClasses[classroomId].stream
+        );
       }
     });
 
@@ -143,7 +155,9 @@ function sockets(io) {
       const allClasses = user.joinedClasses;
 
       // filter out only those online classes in which the user has joined
-      const activeOnlineClasses = Object.values(liveOnlineClasses).filter((onlineClass) => allClasses.indexOf(onlineClass.classroomId) > -1);
+      const activeOnlineClasses = Object.values(liveOnlineClasses).filter(
+        (onlineClass) => allClasses.indexOf(onlineClass.classroomId) > -1
+      );
 
       io.to(socket.id).emit("all_live_classes", activeOnlineClasses);
       // console.log(activeOnlineClasses)
@@ -211,13 +225,22 @@ function sockets(io) {
       if (typingUsers[classroomId].users.indexOf(user) == -1) {
         typingUsers[classroomId].users.push(user);
       }
-      io.to(classroomId).emit("someone_is_typing", typingUsers[classroomId].users);
+      io.to(classroomId).emit(
+        "someone_is_typing",
+        typingUsers[classroomId].users
+      );
     });
 
     socket.on("notTyping", ({ classroomId, user }) => {
       if (typingUsers[classroomId].users.indexOf(user) > -1) {
-        typingUsers[classroomId].users.splice(typingUsers[classroomId].users.indexOf(user), 1);
-        io.to(classroomId).emit("someone_is_typing", typingUsers[classroomId].users);
+        typingUsers[classroomId].users.splice(
+          typingUsers[classroomId].users.indexOf(user),
+          1
+        );
+        io.to(classroomId).emit(
+          "someone_is_typing",
+          typingUsers[classroomId].users
+        );
       }
     });
 
@@ -254,7 +277,9 @@ function sockets(io) {
         }
       }
 
-      recipientsSockets = recipientsSockets.filter((recipient) => recipient !== socket.id);
+      recipientsSockets = recipientsSockets.filter(
+        (recipient) => recipient !== socket.id
+      );
 
       if (recipientsSockets.length > 0) {
         recipientsSockets.forEach((recipient) => {
@@ -266,7 +291,9 @@ function sockets(io) {
     socket.on("disconnect", () => {
       // remove disconnected users from the array
       users = users.filter((user) => user.socket !== socket.id); //need to remove this line later, TODO
-      allActiveUsers = allActiveUsers.filter((user) => user.socket !== socket.id);
+      allActiveUsers = allActiveUsers.filter(
+        (user) => user.socket !== socket.id
+      );
     });
   });
 }
