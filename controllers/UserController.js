@@ -27,10 +27,12 @@ const verifyToken = require("../middlewares/verifyToken");
 
 // User Signup
 Router.post("/", imageUpload, async (req, res) => {
-  const { name, email, image, password, contact, userType } = req.body;
+  const { name, email, password, contact, userType } = req.body;
   try {
     // Validate User Details
-    const validationResult = UserValidator.validate(req.body);
+    delete req.body.image;
+    const validationResult = UserValidator(req.body);
+
     if (validationResult.error) {
       if (req.file) {
         deleteFile(req.file.filename, "images");
@@ -173,7 +175,9 @@ Router.post("/requestPasswordReset", async (req, res) => {
     const passwordResetToken = uuidv4();
     const currentDate = new Date();
     user.passwordResetToken = passwordResetToken;
-    user.passwordResetTokenExpiryDate = currentDate.setHours(currentDate.getHours() + 2);
+    user.passwordResetTokenExpiryDate = currentDate.setHours(
+      currentDate.getHours() + 2
+    );
     await user.save();
 
     const transporter = nodemailer.createTransport({
@@ -243,7 +247,8 @@ Router.post("/resetPassword", async (req, res) => {
   } catch (error) {
     return res.send({
       error: true,
-      message: "Something went wrong while resetting your password. Please try again later.",
+      message:
+        "Something went wrong while resetting your password. Please try again later.",
     });
   }
 });
@@ -340,7 +345,11 @@ Router.get("/resources", verifyToken, async (req, res) => {
 Router.put("/", verifyToken, async (req, res) => {
   try {
     const originalEmail = req.user.email;
-    const updatedUser = await User.findOneAndUpdate({ email: originalEmail }, req.body, { new: true }); // {new:true} returns updated user detail
+    const updatedUser = await User.findOneAndUpdate(
+      { email: originalEmail },
+      req.body,
+      { new: true }
+    ); // {new:true} returns updated user detail
     return res.send({
       error: false,
       message: "User updated successfully.",
@@ -398,7 +407,9 @@ Router.get("/admin/dashboardMetaInfo", verifyToken, async (req, res) => {
     const totalResourcesCounts = await Resource.countDocuments();
     const totalFolderCounts = await Resource.countDocuments();
 
-    const usersSample = await User.find({ userType: { $ne: "ADMIN" } }).limit(4);
+    const usersSample = await User.find({ userType: { $ne: "ADMIN" } }).limit(
+      4
+    );
     const classSample = await Class.find({}).limit(4).populate("createdBy");
 
     return res.send({
@@ -442,7 +453,9 @@ Router.get("/admin/users", verifyToken, async (req, res) => {
 // Admin: all class resource folders
 Router.get("/admin/classResourceFolders", verifyToken, async (req, res) => {
   try {
-    const allFolders = await ResourceFolder.find({ isForClass: true }).populate("resources");
+    const allFolders = await ResourceFolder.find({ isForClass: true }).populate(
+      "resources"
+    );
     return res.send({
       error: false,
       payload: {
