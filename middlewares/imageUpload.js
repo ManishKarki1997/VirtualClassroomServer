@@ -41,12 +41,14 @@ const upload = multer(multerObj).single("image");
 module.exports = (req, res, next) => {
   upload(req, res, function (error) {
     if (error) {
-      res.status(500);
-      if (error.code === "LIMIT_FILE_SIZE") {
-        error.message = "Maximum allowed file size is 5MB";
-        error.error = true;
-      }
-      return res.send(error);
+      // if (error.code === "LIMIT_FILE_SIZE") {
+      //   error.message = "Maximum allowed file size is 5MB";
+      //   error.error = true;
+      // }
+      return res.send({
+        error: true,
+        message: error.message,
+      });
     } else {
       next();
     }

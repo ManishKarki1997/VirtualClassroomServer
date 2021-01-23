@@ -29,9 +29,7 @@ Router.post("/", imageUpload, async (req, res) => {
   const { name, email, password, contact, userType } = req.body;
   try {
     // Validate User Details
-    delete req.body.image;
     const validationResult = UserValidator(req.body);
-
     if (validationResult.error) {
       if (req.file) {
         deleteFile(req.file.filename, "images");

@@ -9,15 +9,11 @@ const userSchema = Joi.object({
       "string.empty": `"Email" cannot be field`,
     }),
 
-  password: Joi.string()
-    .min(6)
-    .max(32)
-    .pattern(new RegExp("^[a-zA-Z0-9]{6,32}$"))
-    .messages({
-      "string.empty": `"Password" cannot be field`,
-      "string.min": `Password must be at least {#limit} characters long`,
-      "string.max": `Password must be at max {#limit} characters long`,
-    }),
+  password: Joi.string().min(6).max(32).messages({
+    "string.empty": `"Password" cannot be field`,
+    "string.min": `Password must be at least {#limit} characters long`,
+    "string.max": `Password must be at max {#limit} characters long`,
+  }),
 
   avatar: Joi.string(),
   userType: Joi.string().messages({

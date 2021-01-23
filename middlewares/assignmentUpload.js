@@ -1,7 +1,5 @@
 const multer = require("multer");
 
-// Image Upload Filters
-
 // Destination and Image Name
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
